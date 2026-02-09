@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clonador · Fast Page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <div>Fast Page</div>
+        <span class="badge hidden" data-user-badge></span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Inicio</a>
+        <a href="builder.html">Creador</a>
+        <a href="cloner.html">Clonador</a>
+        <a href="hub.html">Hub</a>
+      </div>
+    </div>
+  </nav>
+  <main class="section">
+    <div class="container">
+      <div class="card">
+        <h2 style="margin-top:0">Clonar una página</h2>
+        <form id="clone-form" style="display:grid;gap:8px">
+          <input name="url" type="url" placeholder="https://ejemplo.com" required>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" type="submit">Clonar</button>
+            <button id="clone-download" class="btn" type="button" disabled>Descargar HTML</button>
+          </div>
+        </form>
+        <div id="clone-preview" class="preview" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="footer">
+    <div class="container">© 2026 Fast Page</div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

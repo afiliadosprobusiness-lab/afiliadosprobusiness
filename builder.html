@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Creador · Fast Page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <div>Fast Page</div>
+        <span class="badge hidden" data-user-badge></span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Inicio</a>
+        <a href="builder.html">Creador</a>
+        <a href="cloner.html">Clonador</a>
+        <a href="hub.html">Hub</a>
+      </div>
+    </div>
+  </nav>
+  <main class="section">
+    <div class="container">
+      <div class="card">
+        <h2 style="margin-top:0">Constructor de landing</h2>
+        <div class="builder-toolbar">
+          <button class="btn btn-primary" data-add-block="hero">Agregar Hero</button>
+          <button class="btn" data-add-block="features">Agregar Features</button>
+          <button class="btn" data-add-block="pricing">Agregar Pricing</button>
+          <button class="btn" data-add-block="cta">Agregar CTA</button>
+          <button id="clear-blocks" class="btn">Limpiar</button>
+          <button id="export-html" class="btn">Exportar HTML</button>
+        </div>
+        <div id="builder-preview" class="preview"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="footer">
+    <div class="container">© 2026 Fast Page</div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

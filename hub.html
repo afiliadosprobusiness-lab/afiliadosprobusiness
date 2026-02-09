@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hub · Fast Page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <div>Fast Page</div>
+        <span class="badge hidden" data-user-badge></span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Inicio</a>
+        <a href="builder.html">Creador</a>
+        <a href="cloner.html">Clonador</a>
+        <a href="hub.html">Hub</a>
+      </div>
+      <div class="nav-actions">
+        <button id="logout-btn" class="btn">Salir</button>
+      </div>
+    </div>
+  </nav>
+  <main class="section">
+    <div class="container grid grid-2">
+      <div class="card">
+        <h2 style="margin-top:0">Tu panel</h2>
+        <div style="color:var(--muted)">Accede al constructor, clona páginas y administra tu cuenta.</div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <a class="btn btn-primary" href="builder.html">Abrir Creador</a>
+          <a class="btn" href="cloner.html">Abrir Clonador</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Atajos</h3>
+        <div style="display:grid;gap:8px">
+          <a class="btn" href="index.html">Ver landing principal</a>
+          <a class="btn" href="auth.html">Gestionar acceso</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="footer">
+    <div class="container">© 2026 Fast Page</div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

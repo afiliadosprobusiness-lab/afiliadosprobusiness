@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso · Fast Page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <div>Fast Page</div>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Inicio</a>
+        <a href="builder.html">Creador</a>
+        <a href="cloner.html">Clonador</a>
+        <a href="hub.html">Hub</a>
+      </div>
+    </div>
+  </nav>
+  <main class="section">
+    <div class="container" style="max-width:560px">
+      <div class="auth-tabs">
+        <div id="tab-login" class="tab active">Iniciar sesión</div>
+        <div id="tab-register" class="tab">Registrarse</div>
+      </div>
+      <div id="login-card" class="card">
+        <form id="auth-login-form">
+          <div class="form-row">
+            <label>Email</label>
+            <input name="email" type="email" placeholder="tucorreo@dominio.com" required>
+          </div>
+          <div class="form-row">
+            <label>Contraseña</label>
+            <input name="password" type="password" placeholder="••••••••" required>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <a class="btn" href="index.html">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Entrar</button>
+          </div>
+        </form>
+      </div>
+      <div id="register-card" class="card hidden">
+        <form id="auth-register-form">
+          <div class="form-row">
+            <label>Nombre</label>
+            <input name="name" type="text" placeholder="Tu nombre" required>
+          </div>
+          <div class="form-row">
+            <label>Email</label>
+            <input name="email" type="email" placeholder="tucorreo@dominio.com" required>
+          </div>
+          <div class="form-row">
+            <label>Contraseña</label>
+            <input name="password" type="password" placeholder="••••••••" required>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <a class="btn" href="index.html">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Crear cuenta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
