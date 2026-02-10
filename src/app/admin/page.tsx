@@ -41,6 +41,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const router = useRouter();
@@ -56,12 +57,16 @@ export default function AdminPanel() {
         
         // Configurar escucha en tiempo real de Firestore
         const usersRef = collection(db, "users");
-        // Intentar una consulta más simple primero para verificar conexión
+        setDebugInfo("Conectando a la colección 'users'...");
+        
         unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
           console.log("Snapshot recibido, documentos:", querySnapshot.size);
+          setDebugInfo(`Conectado. Documentos encontrados: ${querySnapshot.size}`);
+          
           const usersData: UserData[] = [];
           querySnapshot.forEach((doc) => {
-            usersData.push({ uid: doc.id, ...doc.data() } as UserData);
+            const data = doc.data();
+            usersData.push({ uid: doc.id, ...data } as UserData);
           });
           
           // Ordenar manualmente por ahora para evitar problemas de índices en Firestore
@@ -154,6 +159,7 @@ export default function AdminPanel() {
             <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl">
               <p className="text-zinc-500 text-xs font-bold uppercase mb-1">Total Usuarios</p>
               <p className="text-2xl font-bold">{users.length}</p>
+              <p className="text-[10px] text-zinc-600 mt-1">{debugInfo}</p>
             </div>
             <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl">
               <p className="text-zinc-500 text-xs font-bold uppercase mb-1">Activos</p>
