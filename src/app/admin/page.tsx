@@ -31,8 +31,10 @@ interface UserData {
   email: string;
   name: string;
   lastLogin: number;
+  createdAt?: number;
   status?: 'active' | 'suspended' | 'disabled';
   photoURL?: string;
+  role?: string;
 }
 
 export default function AdminPanel() {
@@ -170,6 +172,7 @@ export default function AdminPanel() {
                 <tr className="border-b border-white/5 bg-black/20">
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Usuario</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Estado</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Registro</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Último Acceso</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Acciones</th>
                 </tr>
@@ -177,14 +180,14 @@ export default function AdminPanel() {
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center">
+                    <td colSpan={5} className="px-6 py-12 text-center">
                       <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-3" />
                       <p className="text-zinc-500 text-sm">Cargando base de datos...</p>
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center">
+                    <td colSpan={5} className="px-6 py-12 text-center">
                       <p className="text-zinc-500 text-sm">No se encontraron usuarios.</p>
                     </td>
                   </tr>
@@ -201,7 +204,12 @@ export default function AdminPanel() {
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{user.name || "Sin nombre"}</p>
+                            <p className="text-sm font-bold text-white">
+                              {user.name || "Sin nombre"}
+                              {user.email === "admin@fastpage.com" && (
+                                <span className="ml-2 text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20">ROOT</span>
+                              )}
+                            </p>
                             <p className="text-xs text-zinc-500">{user.email}</p>
                           </div>
                         </div>
@@ -217,34 +225,45 @@ export default function AdminPanel() {
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-xs text-zinc-400">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-xs text-zinc-400">
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Nunca"}
                         </p>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => updateUserStatus(user.uid, user.status === 'suspended' ? 'active' : 'suspended')}
-                            className={`p-2 rounded-lg transition-all ${user.status === 'suspended' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white'}`}
-                            title={user.status === 'suspended' ? "Reactivar" : "Suspender"}
-                          >
-                            {user.status === 'suspended' ? <UserCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
-                          </button>
-                          
-                          <button 
-                            onClick={() => updateUserStatus(user.uid, user.status === 'disabled' ? 'active' : 'disabled')}
-                            className={`p-2 rounded-lg transition-all ${user.status === 'disabled' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white'}`}
-                            title={user.status === 'disabled' ? "Habilitar" : "Deshabilitar"}
-                          >
-                            {user.status === 'disabled' ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                          </button>
+                          {user.email !== "admin@fastpage.com" ? (
+                            <>
+                              <button 
+                                onClick={() => updateUserStatus(user.uid, user.status === 'suspended' ? 'active' : 'suspended')}
+                                className={`p-2 rounded-lg transition-all ${user.status === 'suspended' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white'}`}
+                                title={user.status === 'suspended' ? "Reactivar" : "Suspender"}
+                              >
+                                {user.status === 'suspended' ? <UserCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
+                              </button>
+                              
+                              <button 
+                                onClick={() => updateUserStatus(user.uid, user.status === 'disabled' ? 'active' : 'disabled')}
+                                className={`p-2 rounded-lg transition-all ${user.status === 'disabled' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white' : 'bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white'}`}
+                                title={user.status === 'disabled' ? "Habilitar" : "Deshabilitar"}
+                              >
+                                {user.status === 'disabled' ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                              </button>
 
-                          <button 
-                            onClick={() => deleteUser(user.uid)}
-                            className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
-                            title="Eliminar Permanente"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                              <button 
+                                onClick={() => deleteUser(user.uid)}
+                                className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                title="Eliminar Permanente"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-zinc-600 font-medium px-2 py-1">SISTEMA PROTEGIDO</span>
+                          )}
                         </div>
                       </td>
                     </tr>
