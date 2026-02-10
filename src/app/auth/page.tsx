@@ -67,6 +67,7 @@ function AuthContent() {
         name: user.displayName || user.name || (user.email ? user.email.split('@')[0] : "Usuario"),
         photoURL: user.photoURL || "",
         lastLogin: Date.now(),
+        createdAt: user.metadata?.createdAt ? parseInt(user.metadata.createdAt) : Date.now(),
         status: "active",
         role: is_admin ? "admin" : "user",
       };
@@ -122,12 +123,7 @@ function AuthContent() {
       await updateProfile(user, { displayName: name });
 
       // 3. Sincronizar con Firestore - Esperar a que se complete para asegurar que el Admin lo vea
-      await syncUserToFirestore({ 
-        uid: user.uid, 
-        email: user.email, 
-        displayName: name,
-        photoURL: "" 
-      });
+      await syncUserToFirestore(user);
 
       showToast("¡Cuenta creada exitosamente!");
       
@@ -169,8 +165,8 @@ function AuthContent() {
       );
       const user = userCredential.user;
 
-      // Sincronización en segundo plano (no bloqueante para el usuario)
-      syncUserToFirestore(user);
+      // Sincronización prioritaria antes de redireccionar
+      await syncUserToFirestore(user);
 
       if (user.email === "admin@fastpage.com") {
         router.push("/admin");
@@ -195,15 +191,15 @@ function AuthContent() {
     // Check if user is already logged in
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Redirección inmediata para mejorar la percepción de velocidad
+        // Sincronización prioritaria
+        await syncUserToFirestore(user);
+
+        // Redirección inmediata después de asegurar datos
         if (user.email === "admin@fastpage.com") {
           router.push("/admin");
         } else {
           router.push("/hub");
         }
-
-        // Sincronización en segundo plano (no bloqueante)
-        syncUserToFirestore(user);
       }
     });
 
@@ -211,8 +207,8 @@ function AuthContent() {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
-          // Sincronización en segundo plano
-          syncUserToFirestore(result.user);
+          // Sincronización prioritaria
+          await syncUserToFirestore(result.user);
           
           if (result.user.email === "admin@fastpage.com") {
             router.push("/admin");
@@ -236,8 +232,8 @@ function AuthContent() {
       // Intentamos con Popup primero
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        // Sincronización en segundo plano (mejora UX, evita esperas largas)
-        syncUserToFirestore(result.user);
+        // Sincronización prioritaria (esperamos a que se guarde en Firestore)
+        await syncUserToFirestore(result.user);
 
         // Forzar redirección inmediata
         const target = result.user.email === "admin@fastpage.com" ? "/admin" : "/hub";
