@@ -184,6 +184,10 @@ function AuthContent() {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      // Forzar la selección de cuenta para asegurar que el popup/redirect se maneje correctamente
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      // Intentamos con Redirect ya que el error 404 en handler.js suele ser por bloqueos de popup o COOP
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error(error);

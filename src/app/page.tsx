@@ -314,38 +314,38 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="relative w-full max-w-7xl mx-auto px-4 md:px-12">
+          <div className="relative w-full max-w-7xl mx-auto px-4">
             {/* Desktop View with 3 Testimonials and Arrows */}
-            <div className="hidden md:flex items-center justify-center gap-6 relative">
-              {/* Left Arrow - Positioned next to the first testimonial */}
+            <div className="hidden md:flex items-center justify-center gap-8 relative py-4">
+              {/* Left Arrow */}
               <button
                 onClick={prevTestimonial}
-                className="absolute left-0 z-20 p-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95 group"
+                className="p-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95 group shadow-xl"
                 aria-label="Previous testimonials"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   stroke="currentColor"
-                  className="w-8 h-8 text-yellow-500 group-hover:scale-110 transition-transform"
+                  className="w-6 h-6 text-yellow-500 group-hover:scale-110 transition-transform"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                 </svg>
               </button>
 
-              <div className="flex gap-6 justify-center">
+              <div className="flex gap-6 justify-center items-stretch">
                 {[0, 1, 2].map((offset) => {
                   const t = testimonials[(currentTestimonial + offset) % testimonials.length];
                   return (
                     <div
                       key={`${t.name}-${offset}`}
-                      className="glass w-[350px] p-8 rounded-2xl hover:bg-white/5 transition-all duration-500 flex flex-col gap-4 flex-shrink-0 animate-fade-in border border-white/10 hover:border-yellow-500/30 group/card"
+                      className="glass w-[380px] p-8 rounded-3xl hover:bg-white/5 transition-all duration-500 flex flex-col gap-4 flex-shrink-0 animate-fade-in border border-white/10 hover:border-yellow-500/30 group/card"
                     >
                       {/* User Info */}
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover/card:border-yellow-500/50 transition-colors">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 group-hover/card:border-yellow-500/50 transition-colors shadow-lg">
                           <img
                             src={t.image}
                             alt={t.name}
@@ -363,12 +363,12 @@ export default function HomePage() {
                       </div>
 
                       {/* Text */}
-                      <p className="text-white text-base leading-relaxed mb-8 font-medium italic opacity-90 min-h-[100px]">
+                      <p className="text-white text-base leading-relaxed mb-6 font-medium italic opacity-90 min-h-[120px] flex items-center">
                         &quot;{t.text}&quot;
                       </p>
 
                       {/* Stars */}
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 mt-auto">
                         {[...Array(5)].map((_, i) => (
                           <svg
                             key={i}
@@ -396,19 +396,19 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* Right Arrow - Positioned next to the third testimonial */}
+              {/* Right Arrow */}
               <button
                 onClick={nextTestimonial}
-                className="absolute right-0 z-20 p-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95 group"
+                className="p-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95 group shadow-xl"
                 aria-label="Next testimonials"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   stroke="currentColor"
-                  className="w-8 h-8 text-yellow-500 group-hover:scale-110 transition-transform"
+                  className="w-6 h-6 text-yellow-500 group-hover:scale-110 transition-transform"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
