@@ -3,25 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Light Mode (Default in CSS, overridden by next-themes if dark) */
-  --background: #ffffff;
-  --foreground: #09090b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-
-  /* Gold Theme Colors - Light Mode (Darker for contrast) */
-  --gold-text: #b48e2d; /* Dark Goldenrod */
-  --gold-gradient-start: #b48e2d;
-  --gold-gradient-mid: #d4af37;
-  --gold-gradient-end: #8a6c1e;
-  --gold-shadow: rgba(180, 142, 45, 0.3);
-}
-
-.dark {
-  /* Cosmic Dark Theme */
+  /* Cosmic Dark Theme (Default) */
   --background: #050505;
   --foreground: #ffffff;
   --primary: #ffffff;
@@ -278,51 +260,46 @@ details[open] summary .text-gold-iridescent {
   animation: thunder-flash 10s infinite;
 }
 
-/* Glass Utility - Theme Specific */
+/* Glass Utility */
 .glass {
-  @apply bg-white/10 dark:bg-black/40 backdrop-blur-lg border border-white/20 dark:border-white/10;
+  @apply bg-black/40 backdrop-blur-lg border border-white/10;
 }
 
-/* FORCE WHITE TEXT IN DARK MODE GLOBAL OVERRIDE */
+/* GLOBAL TEXT COLOR OVERRIDE */
 @layer base {
-  .dark body,
-  .dark p,
-  .dark h1,
-  .dark h2,
-  .dark h3,
-  .dark h4,
-  .dark h5,
-  .dark h6,
-  .dark span,
-  .dark div,
-  .dark li,
-  .dark a,
-  .dark
-    [class*="text-zinc-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-      .text-gold-iridescent
-    ):not([class*="dark:text-yellow-"]),
-  .dark
-    [class*="text-gray-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-      .text-gold-iridescent
-    ):not([class*="dark:text-yellow-"]),
-  .dark
-    [class*="text-slate-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-      .text-gold-iridescent
-    ):not([class*="dark:text-yellow-"]),
-  .dark
-    [class*="text-neutral-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-      .text-gold-iridescent
-    ):not([class*="dark:text-yellow-"]),
-  .dark
-    [class*="text-stone-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-      .text-gold-iridescent
-    ):not([class*="dark:text-yellow-"]),
-  .dark .text-muted-foreground {
+  body,
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  span,
+  div,
+  li,
+  a,
+  [class*="text-zinc-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
+    .text-gold-iridescent
+  ):not([class*="text-yellow-"]),
+  [class*="text-gray-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
+    .text-gold-iridescent
+  ):not([class*="text-yellow-"]),
+  [class*="text-slate-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
+    .text-gold-iridescent
+  ):not([class*="text-yellow-"]),
+  [class*="text-neutral-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
+    .text-gold-iridescent
+  ):not([class*="text-yellow-"]),
+  [class*="text-stone-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
+    .text-gold-iridescent
+  ):not([class*="text-yellow-"]),
+  .text-muted-foreground {
     color: #ffffff !important;
   }
 
-  /* Force black text to stay black even in dark mode */
-  .dark .text-black {
+  /* Force black text to stay black if explicitly set */
+  .text-black {
     color: #000000 !important;
   }
 }
