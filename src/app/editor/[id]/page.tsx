@@ -79,6 +79,12 @@ export default function EditorPage() {
     if (isVisualEditActive) {
       doc.body.contentEditable = "true";
       doc.body.style.outline = "none";
+      doc.body.style.minHeight = "100vh";
+      
+      // Permitir que los elementos hijos hereden la edición pero tengan mejor UX
+      doc.querySelectorAll('div, section, main, header, footer, p, h1, h2, h3, h4, h5, h6, span').forEach(el => {
+        (el as HTMLElement).contentEditable = "true";
+      });
       
       // Añadir estilos para resaltar elementos al pasar el mouse
       const style = doc.createElement("style");
