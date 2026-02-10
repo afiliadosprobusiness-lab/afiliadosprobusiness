@@ -52,6 +52,45 @@ function AuthContent() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  // Función centralizada para sincronizar usuario con Firestore
+  const syncUserToFirestore = async (user: any) => {
+    if (!user) return;
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userData: any = {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName || "Usuario",
+        photoURL: user.photoURL || "",
+        lastLogin: Date.now(),
+        // Solo establecer estos si el usuario es nuevo o para asegurar valores
+        status: "active",
+        role: user.email === "admin@fastpage.com" ? "admin" : "user",
+      };
+
+      // Si es la primera vez que se registra, podemos marcar el createdAt
+      // Pero como estamos usando merge: true, mejor lo manejamos con serverTimestamp o similar si quisiéramos precisión absoluta.
+      // Por ahora, si no existe el campo en Firestore, lo pondrá el primer login.
+      
+      await setDoc(userRef, userData, { merge: true });
+      
+      // Actualizar sesión local
+      localStorage.setItem(
+        "fp_session",
+        JSON.stringify({
+          email: user.email,
+          name: user.displayName || "Usuario",
+          uid: user.uid,
+          photoURL: user.photoURL || "",
+        })
+      );
+      return true;
+    } catch (error) {
+      console.error("Error en syncUserToFirestore:", error);
+      return false;
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -78,22 +117,8 @@ function AuthContent() {
       // 2. Actualizar perfil (nombre)
       await updateProfile(user, { displayName: name });
 
-      // 3. Guardar en Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        email,
-        createdAt: Date.now(),
-        lastLogin: Date.now(),
-        uid: user.uid,
-        role: "user",
-        status: "active"
-      });
-
-      // 4. Guardar sesión local (para compatibilidad)
-      localStorage.setItem(
-        "fp_session",
-        JSON.stringify({ email, name, uid: user.uid }),
-      );
+      // 3. Sincronizar con Firestore
+      await syncUserToFirestore({ ...user, displayName: name });
 
       showToast("¡Cuenta creada exitosamente!");
       setTimeout(() => router.push("/hub"), 1500);
@@ -132,19 +157,8 @@ function AuthContent() {
       );
       const user = userCredential.user;
 
-      // Actualizar lastLogin en Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        lastLogin: Date.now()
-      }, { merge: true });
-
-      localStorage.setItem(
-        "fp_session",
-        JSON.stringify({
-          email: user.email,
-          name: user.displayName || "Usuario",
-          uid: user.uid,
-        }),
-      );
+      // Sincronizar con Firestore
+      await syncUserToFirestore(user);
 
       if (user.email === "admin@fastpage.com") {
         router.push("/admin");
@@ -177,32 +191,7 @@ function AuthContent() {
         }
 
         // Sincronización en segundo plano (no bloqueante)
-        try {
-          setDoc(
-            doc(db, "users", user.uid),
-            {
-              name: user.displayName || "Usuario",
-              email: user.email,
-              lastLogin: Date.now(),
-              uid: user.uid,
-              photoURL: user.photoURL,
-              status: "active",
-              role: user.email === "admin@fastpage.com" ? "admin" : "user"
-            },
-            { merge: true },
-          ).catch(e => console.error("Sync error:", e));
-
-          localStorage.setItem(
-            "fp_session",
-            JSON.stringify({
-              email: user.email,
-              name: user.displayName || "Usuario",
-              uid: user.uid,
-            }),
-          );
-        } catch (error) {
-          console.error("Silent sync error:", error);
-        }
+        syncUserToFirestore(user);
       }
     });
 
@@ -210,31 +199,9 @@ function AuthContent() {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
-          const user = result.user;
-          // Guardar/Actualizar en Firestore
-          await setDoc(
-            doc(db, "users", user.uid),
-            {
-              name: user.displayName,
-              email: user.email,
-              lastLogin: Date.now(),
-              uid: user.uid,
-              photoURL: user.photoURL,
-            },
-            { merge: true },
-          );
-
-          localStorage.setItem(
-            "fp_session",
-            JSON.stringify({
-              email: user.email,
-              name: user.displayName,
-              uid: user.uid,
-              photoURL: user.photoURL,
-            }),
-          );
-
-          if (user.email === "admin@fastpage.com") {
+          await syncUserToFirestore(result.user);
+          
+          if (result.user.email === "admin@fastpage.com") {
             router.push("/admin");
           } else {
             router.push("/hub");
@@ -242,7 +209,6 @@ function AuthContent() {
         }
       } catch (error: any) {
         console.error("Redirect Error:", error);
-        // No mostramos toast aquí para evitar ruidos si no hay redirect pendiente
       }
     };
     checkRedirect();
@@ -257,34 +223,10 @@ function AuthContent() {
       // Intentamos con Popup primero
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        const user = result.user;
-        
-        // Guardar/Actualizar en Firestore
-        await setDoc(
-          doc(db, "users", user.uid),
-          {
-            name: user.displayName,
-            email: user.email,
-            lastLogin: Date.now(),
-            uid: user.uid,
-            photoURL: user.photoURL,
-          },
-          { merge: true },
-        );
-
-        // Guardar en session local
-        localStorage.setItem(
-          "fp_session",
-          JSON.stringify({
-            email: user.email,
-            name: user.displayName,
-            uid: user.uid,
-            photoURL: user.photoURL,
-          }),
-        );
+        await syncUserToFirestore(result.user);
 
         // Forzar redirección
-        if (user.email === "admin@fastpage.com") {
+        if (result.user.email === "admin@fastpage.com") {
           window.location.href = "/admin";
         } else {
           window.location.href = "/hub";
@@ -299,13 +241,21 @@ function AuthContent() {
         // Ignorar
       } else if (error.code === 'auth/popup-closed-by-user') {
         showToast("Inicio de sesión cancelado.");
-      } else {
-        // Si el popup falla por COOP u otros temas, intentamos con Redirect como fallback
+      } else if (error.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.log("Detectado error COOP, intentando redirección...");
         try {
           const provider = new GoogleAuthProvider();
           await signInWithRedirect(auth, provider);
         } catch (redirectError: any) {
-          showToast("Error al iniciar sesión: " + redirectError.message);
+          showToast("Error de seguridad del navegador. Intenta de nuevo.");
+        }
+      } else {
+        // Fallback general para otros errores
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError: any) {
+          showToast("Error al iniciar sesión: " + (error.message || "Error desconocido"));
         }
       }
     }

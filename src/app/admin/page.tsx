@@ -77,15 +77,19 @@ export default function AdminPanel() {
       setDebugInfo("Cargando...");
       
       const unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
+        console.log("Snapshot recibido, documentos:", querySnapshot.size);
         setDebugInfo(`Usuarios: ${querySnapshot.size}`);
         const usersData: UserData[] = [];
         querySnapshot.forEach((doc) => {
-          usersData.push({ uid: doc.id, ...doc.data() } as UserData);
+          const data = doc.data();
+          console.log("Usuario encontrado:", doc.id, data.email);
+          usersData.push({ uid: doc.id, ...data } as UserData);
         });
         usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
         setUsers(usersData);
         setLoading(false);
       }, (err) => {
+        console.error("Error en onSnapshot admin:", err);
         setError(err.message);
         setLoading(false);
       });
