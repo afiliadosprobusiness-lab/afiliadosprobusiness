@@ -93,14 +93,23 @@ export default function HubPage() {
 
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
-          <div className="mb-8 md:mb-12 text-center md:text-left animate-fade-in">
-            <h1 className="text-2xl md:text-4xl font-bold mb-2">
-              {t("hub.welcome")}{" "}
-              <span className="text-gold-glow block md:inline">{userName}</span>
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-base md:text-lg">
-              {t("hub.subtitle")}
-            </p>
+          <div className="mb-8 md:mb-12 flex flex-col md:flex-row items-center gap-6 animate-fade-in">
+            {user?.photoURL && (
+              <img 
+                src={user.photoURL} 
+                alt={userName} 
+                className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-gold-500/30 p-1 shadow-lg shadow-gold-500/10"
+              />
+            )}
+            <div className="text-center md:text-left">
+              <h1 className="text-2xl md:text-4xl font-bold mb-2">
+                {t("hub.welcome")}{" "}
+                <span className="text-gold-glow block md:inline">{userName}</span>
+              </h1>
+              <p className="text-zinc-500 dark:text-zinc-400 text-base md:text-lg">
+                {t("hub.subtitle")}
+              </p>
+            </div>
           </div>
 
           {/* Grid */}

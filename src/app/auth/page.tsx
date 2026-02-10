@@ -13,6 +13,7 @@ import {
   getRedirectResult,
   GoogleAuthProvider,
   updateProfile,
+  onAuthStateChanged,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
@@ -145,6 +146,13 @@ function AuthContent() {
   };
 
   useEffect(() => {
+    // Check if user is already logged in
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push("/hub");
+      }
+    });
+
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -158,6 +166,7 @@ function AuthContent() {
               email: user.email,
               lastLogin: Date.now(),
               uid: user.uid,
+              photoURL: user.photoURL,
             },
             { merge: true },
           );
@@ -168,6 +177,7 @@ function AuthContent() {
               email: user.email,
               name: user.displayName,
               uid: user.uid,
+              photoURL: user.photoURL,
             }),
           );
 
@@ -175,10 +185,11 @@ function AuthContent() {
         }
       } catch (error: any) {
         console.error("Redirect Error:", error);
-        showToast("Error al volver de Google: " + error.message);
+        // No mostramos toast aquí para evitar ruidos si no hay redirect pendiente
       }
     };
     checkRedirect();
+    return () => unsubscribe();
   }, [router]);
 
   const handleGoogleLogin = async () => {
@@ -186,10 +197,12 @@ function AuthContent() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       
-      // Intentamos con Popup primero, ya que Redirect puede causar el error 404 si no está configurado el dominio de auth
+      // Intentamos con Popup primero
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
         const user = result.user;
+        
+        // Guardar/Actualizar en Firestore
         await setDoc(
           doc(db, "users", user.uid),
           {
@@ -197,29 +210,42 @@ function AuthContent() {
             email: user.email,
             lastLogin: Date.now(),
             uid: user.uid,
+            photoURL: user.photoURL,
           },
           { merge: true },
         );
 
+        // Guardar en session local
         localStorage.setItem(
           "fp_session",
           JSON.stringify({
             email: user.email,
             name: user.displayName,
             uid: user.uid,
+            photoURL: user.photoURL,
           }),
         );
 
-        router.push("/hub");
+        // Forzar redirección al Hub
+        window.location.href = "/hub";
       }
     } catch (error: any) {
-      console.error(error);
+      console.error("Google Login Error:", error);
+      
       if (error.code === 'auth/popup-blocked') {
-        showToast("El navegador bloqueó la ventana. Por favor habilítala.");
+        showToast("El navegador bloqueó la ventana emergente. Por favor, habilítala.");
       } else if (error.code === 'auth/cancelled-popup-request') {
-        // Ignorar si el usuario canceló
+        // Ignorar
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        showToast("Inicio de sesión cancelado.");
       } else {
-        showToast("Error con Google: " + error.message);
+        // Si el popup falla por COOP u otros temas, intentamos con Redirect como fallback
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError: any) {
+          showToast("Error al iniciar sesión: " + redirectError.message);
+        }
       }
     }
   };
