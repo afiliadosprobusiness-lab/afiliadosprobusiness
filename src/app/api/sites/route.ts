@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import { sitesStorage } from "@/lib/sitesStorage";
 
 export async function GET() {
-  const sites = sitesStorage.getAll().filter(s => s.published);
+  const allSites = await sitesStorage.getAll();
+  const sites = allSites.filter(s => s.published);
   return NextResponse.json(sites);
 }
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const siteId = uuidv4().slice(0, 8);
-    sitesStorage.set(siteId, {
+    await sitesStorage.set(siteId, {
       html,
       url,
       createdAt: Date.now(),

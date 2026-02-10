@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const site = sitesStorage.get(id);
+  const site = await sitesStorage.get(id);
 
   if (!site) {
     return NextResponse.json({ error: "Site not found" }, { status: 404 });
@@ -27,7 +27,7 @@ export async function PUT(
     const body = await request.json();
     const { html } = body;
 
-    const success = sitesStorage.update(id, html);
+    const success = await sitesStorage.update(id, html);
     if (!success) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 });
     }
@@ -44,7 +44,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const success = sitesStorage.publish(id);
+    const success = await sitesStorage.publish(id);
     if (!success) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 });
     }

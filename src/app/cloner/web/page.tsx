@@ -203,9 +203,7 @@ export default function WebClonerPage() {
                         </div>
                         <button 
                           onClick={() => {
-                            const blob = new Blob([site.html], { type: "text/html" });
-                            const url = URL.createObjectURL(blob);
-                            window.open(url, "_blank");
+                            window.open(`/api/sites/${site.id}`, "_blank");
                           }}
                           className="flex items-center gap-2 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
                         >

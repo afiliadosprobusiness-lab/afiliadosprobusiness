@@ -1,3 +1,16 @@
+import { db } from "./firebase";
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  updateDoc, 
+  query, 
+  where,
+  Timestamp 
+} from "firebase/firestore";
+
 type SiteData = {
   id: string;
   html: string;
@@ -9,62 +22,85 @@ type SiteData = {
 
 class SitesStorage {
   private static instance: SitesStorage;
-  private store: Map<string, SiteData>;
+  private collectionName = "cloned_sites";
 
   private constructor() {
-    this.store = new Map();
-    console.log("[SitesStorage] Initialized new Map instance");
+    console.log("[SitesStorage] Initialized with Firestore");
   }
 
   public static getInstance(): SitesStorage {
     if (!SitesStorage.instance) {
-      // Use global to persist across hot-reloads in development
-      const globalForSites = global as any;
-      if (!globalForSites.sitesStorageInstance) {
-        globalForSites.sitesStorageInstance = new SitesStorage();
-      }
-      SitesStorage.instance = globalForSites.sitesStorageInstance;
+      SitesStorage.instance = new SitesStorage();
     }
     return SitesStorage.instance;
   }
 
-  public set(id: string, data: Omit<SiteData, "id">): void {
-    console.log(`[SitesStorage] Saving site: ${id}`);
-    this.store.set(id, { ...data, id });
-  }
-
-  public get(id: string): SiteData | undefined {
-    const data = this.store.get(id);
-    console.log(`[SitesStorage] Retrieving site: ${id} - ${data ? "Found" : "Not Found"}`);
-    return data;
-  }
-
-  public getAll(): SiteData[] {
-    return Array.from(this.store.values());
-  }
-
-  public update(id: string, html: string): boolean {
-    const existing = this.store.get(id);
-    if (existing) {
-      console.log(`[SitesStorage] Updating site: ${id}`);
-      this.store.set(id, { ...existing, html });
-      return true;
+  public async set(id: string, data: Omit<SiteData, "id">): Promise<void> {
+    console.log(`[SitesStorage] Saving site to Firestore: ${id}`);
+    try {
+      await setDoc(doc(db, this.collectionName, id), {
+        ...data,
+        id,
+        updatedAt: Date.now()
+      });
+    } catch (error) {
+      console.error("[SitesStorage] Error saving site:", error);
+      throw error;
     }
-    return false;
   }
 
-  public publish(id: string): boolean {
-    const existing = this.store.get(id);
-    if (existing) {
-      console.log(`[SitesStorage] Publishing site: ${id}`);
-      this.store.set(id, { 
-        ...existing, 
+  public async get(id: string): Promise<SiteData | undefined> {
+    console.log(`[SitesStorage] Retrieving site from Firestore: ${id}`);
+    try {
+      const docSnap = await getDoc(doc(db, this.collectionName, id));
+      if (docSnap.exists()) {
+        return docSnap.data() as SiteData;
+      }
+      return undefined;
+    } catch (error) {
+      console.error("[SitesStorage] Error getting site:", error);
+      return undefined;
+    }
+  }
+
+  public async getAll(): Promise<SiteData[]> {
+    try {
+      const querySnapshot = await getDocs(collection(db, this.collectionName));
+      return querySnapshot.docs.map(doc => doc.data() as SiteData);
+    } catch (error) {
+      console.error("[SitesStorage] Error getting all sites:", error);
+      return [];
+    }
+  }
+
+  public async update(id: string, html: string): Promise<boolean> {
+    console.log(`[SitesStorage] Updating site in Firestore: ${id}`);
+    try {
+      const siteRef = doc(db, this.collectionName, id);
+      await updateDoc(siteRef, { 
+        html,
+        updatedAt: Date.now()
+      });
+      return true;
+    } catch (error) {
+      console.error("[SitesStorage] Error updating site:", error);
+      return false;
+    }
+  }
+
+  public async publish(id: string): Promise<boolean> {
+    console.log(`[SitesStorage] Publishing site in Firestore: ${id}`);
+    try {
+      const siteRef = doc(db, this.collectionName, id);
+      await updateDoc(siteRef, { 
         published: true, 
         publishedAt: Date.now() 
       });
       return true;
+    } catch (error) {
+      console.error("[SitesStorage] Error publishing site:", error);
+      return false;
     }
-    return false;
   }
 }
 

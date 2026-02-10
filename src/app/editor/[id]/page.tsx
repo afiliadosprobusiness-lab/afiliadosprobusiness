@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Save, Eye, Code, Smartphone, Monitor, ArrowLeft, CheckCircle, Globe, Rocket } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,6 +12,7 @@ export default function EditorPage() {
   const { user: session, loading: authLoading } = useAuth(true);
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
   const [html, setHtml] = useState<string | null>(null);
@@ -178,7 +179,10 @@ export default function EditorPage() {
 
       if (res.ok) {
         setShowPublished(true);
-        setTimeout(() => setShowPublished(false), 3000);
+        // Redireccionar al clonador web después de publicar
+        setTimeout(() => {
+          router.push("/cloner/web");
+        }, 1500);
       }
     } catch (error) {
       console.error("Error publishing site:", error);
