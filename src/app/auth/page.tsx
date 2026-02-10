@@ -28,6 +28,15 @@ export default function AuthPage() {
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
+
+  useEffect(() => {
+    if (errorParam === "suspended") {
+      showToast("Tu cuenta ha sido suspendida temporalmente.");
+    } else if (errorParam === "disabled") {
+      showToast("Tu cuenta ha sido desactivada por el administrador.");
+    }
+  }, [errorParam]);
   const [tab, setTab] = useState<"login" | "register">("login");
   const [toast, setToast] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
@@ -130,7 +139,11 @@ function AuthContent() {
         }),
       );
 
-      router.push("/hub");
+      if (user.email === "admin@fastpage.com") {
+        router.push("/admin");
+      } else {
+        router.push("/hub");
+      }
     } catch (error: any) {
       console.error(error);
       if (
@@ -149,7 +162,11 @@ function AuthContent() {
     // Check if user is already logged in
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        router.push("/hub");
+        if (user.email === "admin@fastpage.com") {
+          router.push("/admin");
+        } else {
+          router.push("/hub");
+        }
       }
     });
 
@@ -181,7 +198,11 @@ function AuthContent() {
             }),
           );
 
-          router.push("/hub");
+          if (user.email === "admin@fastpage.com") {
+            router.push("/admin");
+          } else {
+            router.push("/hub");
+          }
         }
       } catch (error: any) {
         console.error("Redirect Error:", error);
@@ -226,8 +247,12 @@ function AuthContent() {
           }),
         );
 
-        // Forzar redirección al Hub
-        window.location.href = "/hub";
+        // Forzar redirección
+        if (user.email === "admin@fastpage.com") {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/hub";
+        }
       }
     } catch (error: any) {
       console.error("Google Login Error:", error);

@@ -13,6 +13,7 @@ import {
   ArrowRight,
   LogOut,
   LayoutGrid,
+  ShieldAlert,
 } from "lucide-react";
 
 export default function HubPage() {
@@ -20,6 +21,8 @@ export default function HubPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const userName = user?.name || "Creador";
+
+  const isAdmin = user?.email === "admin@fastpage.com";
 
   const handleLogout = async () => {
     await logout();
@@ -146,7 +149,7 @@ export default function HubPage() {
           </div>
 
           {/* Logout Section */}
-          <div className="mt-12 flex justify-center md:justify-start">
+          <div className="mt-12 flex flex-col md:flex-row justify-center md:justify-start gap-4">
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-6 py-3 rounded-full text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 border border-transparent hover:border-red-500/20"
@@ -154,6 +157,16 @@ export default function HubPage() {
               <LogOut className="w-5 h-5" />
               <span>{t("hub.logout")}</span>
             </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => router.push("/admin")}
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-amber-500 hover:text-white hover:bg-amber-500/10 transition-all duration-300 border border-amber-500/20"
+              >
+                <ShieldAlert className="w-5 h-5" />
+                <span>Panel de Administración</span>
+              </button>
+            )}
           </div>
         </div>
       </main>
