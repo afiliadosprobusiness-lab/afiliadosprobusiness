@@ -47,46 +47,53 @@ export default function AdminPanel() {
   const router = useRouter();
 
   useEffect(() => {
-    let unsubscribeSnapshot: () => void;
+    // Verificación ultra-rápida de admin
+    const session = localStorage.getItem("fp_session");
+    if (session) {
+      const userData = JSON.parse(session);
+      if (userData.email === "admin@fastpage.com") {
+        setAuthorized(true);
+      } else {
+        router.replace("/hub");
+        return;
+      }
+    }
 
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user || user.email !== "admin@fastpage.com") {
-        router.push("/hub");
-      } else {
-        setAuthorized(true);
-        
-        // Configurar escucha en tiempo real de Firestore
-        const usersRef = collection(db, "users");
-        setDebugInfo("Conectando a la colección 'users'...");
-        
-        unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
-          console.log("Snapshot recibido, documentos:", querySnapshot.size);
-          setDebugInfo(`Conectado. Documentos encontrados: ${querySnapshot.size}`);
-          
-          const usersData: UserData[] = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            usersData.push({ uid: doc.id, ...data } as UserData);
-          });
-          
-          // Ordenar manualmente por ahora para evitar problemas de índices en Firestore
-          usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
-          
-          setUsers(usersData);
-          setLoading(false);
-          setError(null);
-        }, (error) => {
-          console.error("Error fetching users:", error);
-          setError(error.message);
-          setLoading(false);
-        });
+      if (!user) {
+        router.replace("/auth");
+        return;
       }
+
+      if (user.email !== "admin@fastpage.com") {
+        router.replace("/hub");
+        return;
+      }
+
+      setAuthorized(true);
+      
+      // Solo cargar datos si es admin
+      const usersRef = collection(db, "users");
+      setDebugInfo("Cargando...");
+      
+      const unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
+        setDebugInfo(`Usuarios: ${querySnapshot.size}`);
+        const usersData: UserData[] = [];
+        querySnapshot.forEach((doc) => {
+          usersData.push({ uid: doc.id, ...doc.data() } as UserData);
+        });
+        usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
+        setUsers(usersData);
+        setLoading(false);
+      }, (err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+
+      return () => unsubscribeSnapshot();
     });
 
-    return () => {
-      unsubscribeAuth();
-      if (unsubscribeSnapshot) unsubscribeSnapshot();
-    };
+    return () => unsubscribeAuth();
   }, [router]);
 
   // Ya no necesitamos fetchUsers manual ya que onSnapshot se encarga

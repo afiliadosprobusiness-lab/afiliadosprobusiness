@@ -169,12 +169,19 @@ function AuthContent() {
     // Check if user is already logged in
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Redirección inmediata para mejorar la percepción de velocidad
+        if (user.email === "admin@fastpage.com") {
+          router.push("/admin");
+        } else {
+          router.push("/hub");
+        }
+
+        // Sincronización en segundo plano (no bloqueante)
         try {
-          // ASEGURAR QUE EL USUARIO EXISTE EN FIRESTORE
-          await setDoc(
+          setDoc(
             doc(db, "users", user.uid),
             {
-              name: user.displayName || "Usuario de Google",
+              name: user.displayName || "Usuario",
               email: user.email,
               lastLogin: Date.now(),
               uid: user.uid,
@@ -183,27 +190,18 @@ function AuthContent() {
               role: user.email === "admin@fastpage.com" ? "admin" : "user"
             },
             { merge: true },
-          );
+          ).catch(e => console.error("Sync error:", e));
 
-          // Guardar sesión local
           localStorage.setItem(
             "fp_session",
             JSON.stringify({
               email: user.email,
               name: user.displayName || "Usuario",
               uid: user.uid,
-              photoURL: user.photoURL,
             }),
           );
-
-          if (user.email === "admin@fastpage.com") {
-            router.push("/admin");
-          } else {
-            router.push("/hub");
-          }
         } catch (error) {
-          console.error("Error al sincronizar usuario:", error);
-          showToast("Error de conexión con la base de datos.");
+          console.error("Silent sync error:", error);
         }
       }
     });
