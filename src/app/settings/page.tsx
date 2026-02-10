@@ -120,20 +120,37 @@ export default function SettingsPage() {
     notifications: true
   });
 
+  // Sync initial auth data immediately to avoid empty fields
+  useEffect(() => {
+    if (authUser) {
+      setFormData(prev => ({
+        ...prev,
+        displayName: prev.displayName || authUser.name || "",
+        email: prev.email || authUser.email || "",
+        avatar: prev.avatar || authUser.photoURL || "",
+      }));
+      
+      // If we have basic auth info, we can already show the page
+      if (loading) {
+        setLoading(false);
+      }
+    }
+  }, [authUser]);
+
   useEffect(() => {
     const fetchUserData = async () => {
-      if (authLoading) return;
-      if (!authUser) return;
+      if (authLoading || !authUser) return;
 
       try {
         const userDoc = await getDoc(doc(db, "users", authUser.uid!));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setFormData({
-            displayName: data.name || data.displayName || authUser.name || "",
-            email: data.email || authUser.email || "",
-            phone: data.phone || "",
-            avatar: data.avatar || authUser.photoURL || "",
+          setFormData(prev => ({
+            ...prev,
+            displayName: data.name || data.displayName || prev.displayName || "",
+            email: data.email || prev.email || "",
+            phone: data.phone || prev.phone || "",
+            avatar: data.avatar || prev.avatar || "",
             company: data.company || "",
             website: data.website || "",
             bio: data.bio || "",
@@ -143,18 +160,17 @@ export default function SettingsPage() {
             twoFactorPhone: data.twoFactorPhone || false,
             language: data.language || language || "es",
             notifications: data.notifications ?? true
-          });
+          }));
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        setMessage({ type: "error", text: t("settings.error") });
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserData();
-  }, [authLoading, authUser, language, t]);
+  }, [authLoading, authUser, language]);
 
   const validateForm = () => {
     if (formData.website && !formData.website.startsWith("http")) {
@@ -214,7 +230,7 @@ export default function SettingsPage() {
     { id: "security", label: t("settings.tabs.security"), icon: <Shield className="w-5 h-5" />, desc: t("settings.tabs.security.desc") },
   ], [t]);
 
-  if (loading || authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
         <Loader2 className="w-16 h-16 text-amber-500 animate-spin" />
@@ -234,8 +250,9 @@ export default function SettingsPage() {
         {/* Header Section */}
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-3 uppercase">
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-3 uppercase flex items-center gap-4">
               {t("settings.title")}
+              {loading && <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />}
             </h1>
             <p className="text-zinc-400 text-lg max-w-2xl font-medium">
               {t("settings.subtitle")}
