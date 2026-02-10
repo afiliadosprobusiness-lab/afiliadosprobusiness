@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
 
 type Session = {
   email?: string;
@@ -46,7 +46,8 @@ export default function Nav() {
   const navLinks = [
     { name: t("nav.home"), href: "/", emoji: "" },
     { name: t("nav.builder"), href: "/builder", emoji: "" },
-    { name: t("nav.cloner"), href: "/cloner", emoji: "" },
+    { name: t("nav.templates"), href: "/cloner", emoji: "" },
+    { name: t("nav.cloner"), href: "/cloner/web", emoji: "" },
     { name: t("nav.hub"), href: "/hub", emoji: "" },
   ];
 
@@ -56,10 +57,8 @@ export default function Nav() {
       <div className="hidden md:block">
         {/* Logo - Top Left */}
         <div className="fixed top-8 left-8 z-50">
-          <Link href="/" className="flex items-center gap-2 hover-vibrate">
-            <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-lg">
-              C
-            </div>
+          <Link href="/" className="flex items-center gap-2 hover-vibrate" aria-label="Fast Page Home">
+            <Zap className="w-8 h-8 text-amber-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.7)]" />
           </Link>
         </div>
 
@@ -124,10 +123,8 @@ export default function Nav() {
       {/* Mobile Navigation Layout */}
       <div className="md:hidden">
         <header className="fixed top-0 left-0 w-full h-16 z-50 flex items-center justify-between px-4 bg-bg/80 backdrop-blur-md border-b border-border">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black font-bold">
-              C
-            </div>
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg" aria-label="Fast Page Home">
+            <Zap className="w-6 h-6 text-amber-400" />
             <span>Fast Page</span>
           </Link>
 

@@ -398,11 +398,11 @@ export default function ClonerPage() {
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-12 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+          <div className="text-center mb-12 animate-fade-in px-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6">
               {t("cloner.title")} <span className="text-gold-glow">Deluxe</span>
             </h1>
-            <p className="text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto">
               {selectedModel ? (
                 <span className="flex items-center justify-center gap-2">
                   {currentModel?.title}

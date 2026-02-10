@@ -207,7 +207,7 @@ export default function HomePage() {
 
             {/* Main Title */}
             <h1
-              className="text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up"
+              className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up px-2"
               style={{ animationDelay: "0.1s" }}
             >
               {t("hero.title_start")} <br />
@@ -218,7 +218,7 @@ export default function HomePage() {
 
             {/* Subtitle */}
             <p
-              className="text-lg md:text-xl text-zinc-600 dark:text-white font-medium max-w-2xl animate-slide-up"
+              className="text-base md:text-xl text-zinc-600 dark:text-white font-medium max-w-2xl animate-slide-up px-4"
               style={{ animationDelay: "0.2s" }}
             >
               {t("hero.subtitle_start")}{" "}
@@ -233,12 +233,12 @@ export default function HomePage() {
 
             {/* CTA Buttons */}
             <div
-              className="flex flex-col sm:flex-row items-center gap-6 mt-6 animate-slide-up"
+              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mt-6 animate-slide-up w-full sm:w-auto px-4 sm:px-0"
               style={{ animationDelay: "0.3s" }}
             >
               <Link
                 href="/auth"
-                className="btn btn-deluxe px-10 py-4 text-lg group hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                className="btn btn-deluxe w-full sm:w-auto px-10 py-4 text-lg group hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <span>🔥</span>
                 {t("hero.cta_create")}
@@ -247,7 +247,7 @@ export default function HomePage() {
 
               <Link
                 href="/auth"
-                className="btn btn-deluxe-outline px-10 py-4 text-lg"
+                className="btn btn-deluxe-outline w-full sm:w-auto px-10 py-4 text-lg"
               >
                 {t("hero.cta_clone")}
               </Link>
@@ -263,12 +263,12 @@ export default function HomePage() {
           <p className="text-center text-sm mb-6 uppercase tracking-widest font-bold text-gold-gradient">
             {t("hero.payments")}
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-            <span className="text-xl font-bold text-orange-500">BCP</span>
-            <span className="text-xl font-bold text-blue-600">BBVA</span>
-            <span className="text-xl font-bold text-red-600">Scotiabank</span>
-            <span className="text-xl font-bold text-purple-500">Yape</span>
-            <span className="text-xl font-bold text-cyan-400">Plin</span>
+          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-500 px-4">
+            <span className="text-lg sm:text-xl font-bold text-orange-500">BCP</span>
+            <span className="text-lg sm:text-xl font-bold text-blue-600">BBVA</span>
+            <span className="text-lg sm:text-xl font-bold text-red-600">Scotiabank</span>
+            <span className="text-lg sm:text-xl font-bold text-purple-500">Yape</span>
+            <span className="text-lg sm:text-xl font-bold text-cyan-400">Plin</span>
           </div>
         </div>
       </section>

@@ -14,6 +14,7 @@ import {
   Settings,
   ArrowRight,
   LogOut,
+  LayoutGrid,
 } from "lucide-react";
 
 export default function HubPage() {
@@ -81,9 +82,18 @@ export default function HubPage() {
     {
       title: t("hub.cloner.title"),
       description: t("hub.cloner.desc"),
-      icon: <Copy className="w-8 h-8 text-cyan-400" />,
+      icon: <LayoutGrid className="w-8 h-8 text-cyan-400" />,
       action: t("hub.cloner.action"),
       href: "/cloner",
+      gradient: "from-zinc-900 to-zinc-900",
+      border: "hover:border-cyan-500/50",
+    },
+    {
+      title: t("hub.webcloner.title"),
+      description: t("hub.webcloner.desc"),
+      icon: <Copy className="w-8 h-8 text-cyan-400" />,
+      action: t("hub.webcloner.action"),
+      href: "/cloner/web",
       gradient: "from-zinc-900 to-zinc-900",
       border: "hover:border-cyan-500/50",
     },
@@ -111,33 +121,33 @@ export default function HubPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Nav />
 
-      <main className="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <main className="flex-grow pt-20 md:pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Effects */}
         <div className="fixed inset-0 pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,215,0,0.03),transparent_70%)]" />
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-900/5 rounded-full blur-[100px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-yellow-600/5 rounded-full blur-[80px]" />
+          <div className="absolute top-1/4 left-1/4 w-72 md:w-96 h-72 md:h-96 bg-purple-900/5 rounded-full blur-[80px] md:blur-[100px]" />
+          <div className="absolute bottom-1/4 right-1/4 w-48 md:w-64 h-48 md:h-64 bg-yellow-600/5 rounded-full blur-[60px] md:blur-[80px]" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
-          <div className="mb-12 text-center md:text-left animate-fade-in">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <div className="mb-8 md:mb-12 text-center md:text-left animate-fade-in">
+            <h1 className="text-2xl md:text-4xl font-bold mb-2">
               {t("hub.welcome")}{" "}
-              <span className="text-gold-glow">{userName}</span>
+              <span className="text-gold-glow block md:inline">{userName}</span>
             </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-lg">
+            <p className="text-zinc-500 dark:text-zinc-400 text-base md:text-lg">
               {t("hub.subtitle")}
             </p>
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             {panels.map((panel, index) => (
               <div
                 key={index}
                 onClick={() => router.push(panel.href)}
-                className={`group relative p-8 rounded-3xl border border-white/5 bg-gradient-to-br ${panel.gradient} cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50 ${panel.border} overflow-hidden`}
+                className={`group relative p-6 md:p-8 rounded-2xl md:rounded-3xl border border-white/5 bg-gradient-to-br ${panel.gradient} cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50 ${panel.border} overflow-hidden`}
               >
                 {/* Hover Glow */}
                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

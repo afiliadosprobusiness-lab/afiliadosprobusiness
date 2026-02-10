@@ -17,7 +17,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 const translations: Record<string, Record<Language, string>> = {
   // Nav
   "nav.home": { es: "Inicio", en: "Home" },
-  "nav.builder": { es: "Creador", en: "Builder" },
+  "nav.builder": { es: "Constructor", en: "Builder" },
+  "nav.templates": { es: "Plantillas", en: "Templates" },
   "nav.cloner": { es: "Clonador", en: "Cloner" },
   "nav.hub": { es: "Hub", en: "Hub" },
   "nav.login": { es: "Iniciar Sesión", en: "Login" },
@@ -211,12 +212,18 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Create landing pages from scratch with our drag and drop visual editor.",
   },
   "hub.builder.action": { es: "Abrir Constructor", en: "Open Builder" },
-  "hub.cloner.title": { es: "Clonador Web", en: "Web Cloner" },
+  "hub.cloner.title": { es: "Plantillas Web", en: "Web Templates" },
   "hub.cloner.desc": {
+    es: "Personaliza tu pagina web",
+    en: "Customize your web page",
+  },
+  "hub.cloner.action": { es: "Abrir Plantillas", en: "Open Templates" },
+  "hub.webcloner.title": { es: "Clonador Web", en: "Web Cloner" },
+  "hub.webcloner.desc": {
     es: "Replica cualquier sitio web en segundos y hazlo tuyo.",
     en: "Replicate any website in seconds and make it yours.",
   },
-  "hub.cloner.action": { es: "Abrir Clonador", en: "Open Cloner" },
+  "hub.webcloner.action": { es: "Abrir Clonador", en: "Open Cloner" },
   "hub.metrics.title": { es: "Métricas Pro", en: "Pro Metrics" },
   "hub.metrics.desc": {
     es: "Analíticas avanzadas y mapas de calor para optimizar conversiones.",
