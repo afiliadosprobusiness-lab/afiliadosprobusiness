@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket } from "lucide-react";
 
 function isValidUrl(url: string) {
@@ -16,6 +17,7 @@ function isValidUrl(url: string) {
 }
 
 export default function WebClonerPage() {
+  const { user, loading: authLoading } = useAuth(true);
   const { t } = useLanguage();
   const [url, setUrl] = useState("");
   const [html, setHtml] = useState<string | null>(null);

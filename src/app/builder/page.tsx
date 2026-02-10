@@ -1,84 +1,198 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+  Plus, 
+  Trash2, 
+  Download, 
+  Trash, 
+  ChevronUp, 
+  ChevronDown, 
+  Monitor, 
+  Smartphone, 
+  Eye, 
+  Settings as SettingsIcon,
+  Layout,
+  Type,
+  Image as ImageIcon,
+  MousePointer2,
+  Zap,
+  Star,
+  Check,
+  Play,
+  ArrowRight,
+  Copy
+} from "lucide-react";
 
-type BlockType = "hero" | "features" | "cta" | "pricing";
+type BlockType = "hero" | "features" | "cta" | "pricing" | "testimonials" | "faq" | "footer";
+
+interface Block {
+  id: string;
+  type: BlockType;
+  content: any;
+}
+
+const DEFAULT_BLOCKS: Record<BlockType, any> = {
+  hero: {
+    title: "Impulsa tu Negocio con una Landing Page de Alto Impacto 🚀",
+    subtitle: "Crea páginas profesionales en minutos, sin código y optimizadas para convertir visitantes en clientes leales.",
+    primaryBtn: "Empieza Ahora Gratis",
+    secondaryBtn: "Ver Demo",
+    badge: "NUEVA FUNCIÓN: IA GENERATIVA",
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426&auto=format&fit=crop"
+  },
+  features: {
+    title: "Todo lo que necesitas para vender más 💎",
+    items: [
+      { icon: "⚡", title: "Velocidad Extrema", desc: "Optimizado para cargar en menos de 1 segundo." },
+      { icon: "🎨", title: "Diseño Profesional", desc: "Plantillas creadas por expertos en marketing." },
+      { icon: "📱", title: "100% Responsivo", desc: "Tu página se verá perfecta en cualquier dispositivo." }
+    ]
+  },
+  cta: {
+    title: "¿Listo para llevar tu marca al siguiente nivel? 🔥",
+    desc: "Únete a más de 10,000 emprendedores que ya están escalando sus ventas con Fast Page.",
+    btn: "Crear Mi Landing Ahora"
+  },
+  pricing: {
+    title: "Planes que crecen contigo 📈",
+    plans: [
+      { name: "Emprendedor", price: "0", features: ["1 Proyecto", "Dominio FastPage", "Soporte Comunidad"] },
+      { name: "Profesional", price: "29", features: ["10 Proyectos", "Dominio Propio", "Sin Marca de Agua", "Soporte 24/7"], popular: true },
+      { name: "Agencia", price: "99", features: ["Proyectos Ilimitados", "Acceso API", "Multi-usuario", "White Label"] }
+    ]
+  },
+  testimonials: {
+    title: "Lo que dicen nuestros clientes ⭐",
+    items: [
+      { name: "Ana García", role: "CEO de TechFlow", text: "Fast Page cambió la forma en que lanzamos productos. Es increíblemente rápido.", avatar: "https://i.pravatar.cc/150?u=ana" },
+      { name: "Carlos Ruiz", role: "Marketer Independiente", text: "La mejor inversión para mis campañas de Ads. Las conversiones subieron un 40%.", avatar: "https://i.pravatar.cc/150?u=carlos" }
+    ]
+  },
+  faq: {
+    title: "Preguntas Frecuentes ❓",
+    items: [
+      { q: "¿Necesito conocimientos técnicos?", a: "Absolutamente no. Fast Page está diseñado para ser usado por cualquier persona." },
+      { q: "¿Puedo usar mi propio dominio?", a: "Sí, en los planes Profesional y Agencia puedes conectar tus propios dominios." }
+    ]
+  },
+  footer: {
+    text: "© 2026 Fast Page. Todos los derechos reservados. Hecho con ❤️ para marketers."
+  }
+};
 
 export default function BuilderPage() {
-  const [blocks, setBlocks] = useState<BlockType[]>([]);
+  const { user, loading } = useAuth(true);
+  const { t } = useLanguage();
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [activeTab, setActiveTab] = useState<"add" | "styles">("add");
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Load from local storage
+  useEffect(() => {
+    if (!isClient) return;
+    const saved = localStorage.getItem("fastpage_builder_draft");
+    if (saved) {
+      try {
+        setBlocks(JSON.parse(saved));
+      } catch (e) {
+        console.error("Error loading draft", e);
+      }
+    }
+  }, [isClient]);
+
+  // Save to local storage
+  useEffect(() => {
+    if (isClient && blocks.length > 0) {
+      localStorage.setItem("fastpage_builder_draft", JSON.stringify(blocks));
+    }
+  }, [blocks, isClient]);
 
   const addBlock = (type: BlockType) => {
-    setBlocks([...blocks, type]);
+    const newBlock: Block = {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      content: { ...DEFAULT_BLOCKS[type] }
+    };
+    setBlocks([...blocks, newBlock]);
   };
 
-  const clearBlocks = () => {
-    setBlocks([]);
+  const removeBlock = (id: string) => {
+    setBlocks(blocks.filter(b => b.id !== id));
+  };
+
+  const moveBlock = (index: number, direction: "up" | "down") => {
+    const newBlocks = [...blocks];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newBlocks.length) return;
+    
+    [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
+    setBlocks(newBlocks);
+  };
+
+  const duplicateBlock = (index: number) => {
+    const newBlocks = [...blocks];
+    const blockToDuplicate = { ...newBlocks[index], id: Math.random().toString(36).substr(2, 9) };
+    newBlocks.splice(index + 1, 0, blockToDuplicate);
+    setBlocks(newBlocks);
+  };
+
+  const updateBlockContent = (id: string, newContent: any) => {
+    setBlocks(blocks.map(b => b.id === id ? { ...b, content: newContent } : b));
+  };
+
+  const clearBuilder = () => {
+    if (confirm("¿Estás seguro de que quieres limpiar todo el constructor?")) {
+      setBlocks([]);
+      localStorage.removeItem("fastpage_builder_draft");
+    }
   };
 
   const exportHtml = () => {
-    const previewElement = document.getElementById("builder-preview");
+    setSaving(true);
+    const previewElement = document.getElementById("builder-preview-content");
     if (!previewElement) return;
 
-    const htmlContent = previewElement.innerHTML;
+    // Clone to remove editor-only elements
+    const clone = previewElement.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll(".editor-controls").forEach(el => el.remove());
+    clone.querySelectorAll("[contenteditable]").forEach(el => {
+      (el as HTMLElement).removeAttribute("contenteditable");
+      (el as HTMLElement).classList.remove("hover:outline-dashed", "hover:outline-cyan-500/50");
+    });
+
+    const htmlContent = clone.innerHTML;
 
     const fullHtml = `<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Landing Exportada</title>
+  <title>Mi Landing Page Profesional - Fast Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            bg: '#0b0f14',
-            'bg-alt': '#0e141b',
-            text: '#e6edf3',
-            muted: '#b6c2cf',
-            primary: '#6ee7ff',
-            'primary-2': '#7c67ff',
-            accent: '#3cf0a8',
-            danger: '#ff6b6b',
-            card: '#121824',
-            border: '#1f2a37',
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { background-color: #0b0f14; color: #e6edf3; }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 9999px;
-      font-weight: 600;
-      border: 1px solid #1f2a37;
-      background: linear-gradient(to bottom, #151c29, #101723);
-      color: #e6edf3;
-      transition: all 0.2s;
-    }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(110, 231, 255, 0.1); }
-    .btn-primary {
-      border-color: rgba(110, 231, 255, 0.35);
-      background: linear-gradient(to bottom, rgba(124, 103, 255, 0.25), rgba(124, 103, 255, 0.1));
-    }
-    .card {
-      padding: 1rem;
-      border-radius: 0.5rem;
-      border: 1px solid #1f2a37;
-      background: linear-gradient(to bottom, rgba(18, 24, 36, 0.6), rgba(18, 24, 36, 0.35));
-    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #030712; color: #f9fafb; }
+    .text-gradient { background: linear-gradient(to right, #fbbf24, #f59e0b, #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .bg-glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .btn-gold { background: linear-gradient(to bottom, #fbbf24, #d97706); color: #000; font-weight: 800; border-radius: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3); }
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(251, 191, 36, 0.5); }
+    section { position: relative; overflow: hidden; }
   </style>
 </head>
-<body class="font-sans antialiased">
+<body class="antialiased">
   ${htmlContent}
 </body>
 </html>`;
@@ -87,197 +201,537 @@ export default function BuilderPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "landing-exportada.html";
+    a.download = `landing-fastpage-${Date.now()}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setSaving(false);
   };
 
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="min-h-screen bg-[#030712] text-white flex flex-col">
       <Nav />
-      <main className="section container">
-        <div className="card">
-          <h2 className="text-2xl font-bold mb-4">
-            Constructor de <span className="text-gold-glow">landing</span>
-          </h2>
+      
+      <div className="flex-grow flex pt-20">
+        {/* Left Sidebar - Toolbar */}
+        <aside className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl fixed left-0 top-20 bottom-0 z-30 hidden lg:flex flex-col">
+          <div className="p-6 border-b border-white/5">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Layout className="w-5 h-5 text-amber-500" />
+              Constructor <span className="text-amber-500">Pro</span>
+            </h2>
+            <p className="text-zinc-500 text-xs mt-1">Arrastra o haz clic para añadir bloques</p>
+          </div>
 
-          <div className="flex flex-wrap gap-2 mb-6 p-4 bg-bg-alt rounded-lg border border-border">
-            <button
-              onClick={() => addBlock("hero")}
-              className="btn btn-primary"
+          <div className="flex p-2 gap-1 border-b border-white/5 bg-black/20">
+            <button 
+              onClick={() => setActiveTab("add")}
+              className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === "add" ? "bg-amber-500 text-black" : "text-zinc-500 hover:text-white"}`}
             >
-              Agregar Hero
+              Bloques
             </button>
-            <button onClick={() => addBlock("features")} className="btn">
-              Agregar Features
+            <button 
+              onClick={() => setActiveTab("styles")}
+              className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === "styles" ? "bg-amber-500 text-black" : "text-zinc-500 hover:text-white"}`}
+            >
+              Estilos
             </button>
-            <button onClick={() => addBlock("pricing")} className="btn">
-              Agregar Pricing
+          </div>
+
+          <div className="flex-grow overflow-y-auto p-4 space-y-3 no-scrollbar">
+            {activeTab === "add" ? (
+              <>
+                <BlockButton icon={<Zap />} label="Hero Principal" onClick={() => addBlock("hero")} />
+                <BlockButton icon={<Layout />} label="Características" onClick={() => addBlock("features")} />
+                <BlockButton icon={<Star />} label="Testimonios" onClick={() => addBlock("testimonials")} />
+                <BlockButton icon={<MousePointer2 />} label="Llamada a la Acción" onClick={() => addBlock("cta")} />
+                <BlockButton icon={<Plus />} label="Planes de Precios" onClick={() => addBlock("pricing")} />
+                <BlockButton icon={<Type />} label="Preguntas (FAQ)" onClick={() => addBlock("faq")} />
+                <BlockButton icon={<ImageIcon />} label="Pie de Página" onClick={() => addBlock("footer")} />
+              </>
+            ) : (
+              <div className="p-4 text-center space-y-4">
+                <div className="space-y-2 text-left">
+                  <label className="text-[10px] uppercase font-bold text-zinc-500">Color Primario</label>
+                  <div className="flex gap-2">
+                    {["#fbbf24", "#06b6d4", "#8b5cf6", "#ec4899"].map(c => (
+                      <div key={c} className="w-8 h-8 rounded-full border border-white/10 cursor-pointer hover:scale-110 transition-transform" style={{backgroundColor: c}} />
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2 text-left">
+                  <label className="text-[10px] uppercase font-bold text-zinc-500">Tipografía</label>
+                  <select className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500/50">
+                    <option>Plus Jakarta Sans</option>
+                    <option>Inter</option>
+                    <option>Montserrat</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 border-t border-white/5 space-y-2">
+            <button 
+              onClick={exportHtml}
+              disabled={blocks.length === 0 || saving}
+              className="w-full bg-amber-500 text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-amber-400 transition-all disabled:opacity-50"
+            >
+              {saving ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+              Exportar Proyecto
             </button>
-            <button onClick={() => addBlock("cta")} className="btn">
-              Agregar CTA
+            <button 
+              onClick={clearBuilder}
+              className="w-full bg-white/5 text-zinc-400 py-2 rounded-xl text-xs font-bold hover:bg-red-500/10 hover:text-red-500 transition-all"
+            >
+              Limpiar Todo
             </button>
-            <div className="ml-auto flex gap-2">
-              <button
-                onClick={clearBlocks}
-                className="btn text-danger border-danger/20 hover:bg-danger/10"
+          </div>
+        </aside>
+
+        {/* Main Canvas */}
+        <main className="flex-grow lg:ml-80 bg-[#020617] p-4 md:p-8 flex flex-col items-center overflow-y-auto no-scrollbar">
+          
+          {/* Top Canvas Toolbar */}
+          <div className="w-full max-w-5xl mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 bg-zinc-900/80 p-1 rounded-xl border border-white/5 backdrop-blur-md">
+              <button 
+                onClick={() => setViewMode("desktop")}
+                className={`p-2 rounded-lg transition-all ${viewMode === "desktop" ? "bg-amber-500 text-black" : "text-zinc-500 hover:text-white"}`}
               >
-                Limpiar
+                <Monitor className="w-4 h-4" />
               </button>
-              <button
-                onClick={exportHtml}
-                className="btn border-accent/20 text-accent hover:bg-accent/10"
+              <button 
+                onClick={() => setViewMode("mobile")}
+                className={`p-2 rounded-lg transition-all ${viewMode === "mobile" ? "bg-amber-500 text-black" : "text-zinc-500 hover:text-white"}`}
               >
-                Exportar HTML
+                <Smartphone className="w-4 h-4" />
               </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 animate-pulse">
+                Auto-guardado activo
+              </span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </div>
           </div>
 
-          <div
-            id="builder-preview"
-            className="space-y-8 min-h-[300px] border border-dashed border-border rounded-lg p-4"
+          {/* Builder Surface */}
+          <div 
+            className={`transition-all duration-500 ease-in-out bg-black rounded-[2rem] border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ${viewMode === "mobile" ? "max-w-[375px] h-[667px]" : "w-full max-w-5xl min-h-[80vh]"}`}
           >
-            {blocks.length === 0 && (
-              <div className="text-center text-muted py-12">
-                Selecciona bloques arriba para comenzar a construir
-              </div>
-            )}
-            {blocks.map((type, index) => (
-              <BlockRenderer key={index} type={type} />
-            ))}
+            <div id="builder-preview-content" className="flex-grow overflow-y-auto no-scrollbar scroll-smooth bg-[#030712]">
+              {blocks.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                  <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center mb-6 animate-bounce">
+                    <Plus className="w-10 h-10 text-amber-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Tu lienzo está listo</h3>
+                  <p className="text-zinc-500 max-w-xs">Añade tu primer bloque desde la barra lateral para empezar a crear tu landing page profesional.</p>
+                </div>
+              ) : (
+                blocks.map((block, index) => (
+                  <div key={block.id} className="group relative">
+                    {/* Block Controls */}
+                    <div className="editor-controls absolute top-4 right-4 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => moveBlock(index, "up")} className="p-2 bg-zinc-900/90 text-white rounded-lg hover:bg-amber-500 hover:text-black transition-all border border-white/5" title="Mover arriba"><ChevronUp className="w-4 h-4" /></button>
+                      <button onClick={() => moveBlock(index, "down")} className="p-2 bg-zinc-900/90 text-white rounded-lg hover:bg-amber-500 hover:text-black transition-all border border-white/5" title="Mover abajo"><ChevronDown className="w-4 h-4" /></button>
+                      <button onClick={() => duplicateBlock(index)} className="p-2 bg-zinc-900/90 text-white rounded-lg hover:bg-blue-500 hover:text-white transition-all border border-white/5" title="Duplicar"><Copy className="w-4 h-4" /></button>
+                      <button onClick={() => removeBlock(block.id)} className="p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all border border-red-500/20" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+
+                    <EditableBlock 
+                      block={block} 
+                      onUpdate={(content) => updateBlockContent(block.id, content)} 
+                    />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
+
       <Footer />
     </div>
   );
 }
 
-function BlockRenderer({ type }: { type: BlockType }) {
-  switch (type) {
+function BlockButton({ icon, label, onClick }: { icon: any, label: string, onClick: () => void }) {
+  return (
+    <button 
+      onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group text-left"
+    >
+      <div className="p-2 rounded-lg bg-zinc-800 text-zinc-400 group-hover:text-amber-500 group-hover:bg-amber-500/10 transition-colors">
+        {icon}
+      </div>
+      <span className="text-sm font-medium text-zinc-300 group-hover:text-white">{label}</span>
+    </button>
+  );
+}
+
+function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: any) => void }) {
+  const handleChange = (field: string, value: string) => {
+    onUpdate({ ...block.content, [field]: value });
+  };
+
+  const handleListItemChange = (field: string, index: number, subfield: string, value: string) => {
+    const newList = [...block.content[field]];
+    newList[index] = { ...newList[index], [subfield]: value };
+    onUpdate({ ...block.content, [field]: newList });
+  };
+
+  const handleImageUpload = (field: string) => {
+    const url = prompt("Introduce la URL de la imagen:");
+    if (url) {
+      handleChange(field, url);
+    }
+  };
+
+  const handleListItemImageUpload = (field: string, index: number, subfield: string) => {
+    const url = prompt("Introduce la URL de la imagen:");
+    if (url) {
+      handleListItemChange(field, index, subfield, url);
+    }
+  };
+
+  switch (block.type) {
     case "hero":
       return (
-        <section className="py-12 px-4 text-center">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-2">
-              Título impactante
-            </h1>
-            <p className="text-xl text-muted mb-8">
-              Mensaje claro para captar atención con valor directo y conciso.
-            </p>
-            <div className="flex justify-center gap-4">
-              <a href="#" className="btn btn-primary text-lg px-8 py-3">
-                Empieza ahora
-              </a>
-              <a href="#" className="btn text-lg px-8 py-3">
-                Saber más
-              </a>
+        <section className="py-24 px-6 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.08),transparent_70%)] pointer-events-none" />
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="flex flex-col lg:flex-row items-center gap-16">
+              <div className="flex-1 text-left">
+                <span 
+                  contentEditable 
+                  suppressContentEditableWarning
+                  onBlur={(e) => handleChange("badge", e.currentTarget.textContent || "")}
+                  className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest mb-8 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                >
+                  {block.content.badge}
+                </span>
+                <h1 
+                  contentEditable 
+                  suppressContentEditableWarning
+                  onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
+                  className="text-4xl md:text-6xl font-black tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-white to-amber-200 leading-tight outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                >
+                  {block.content.title}
+                </h1>
+                <p 
+                  contentEditable 
+                  suppressContentEditableWarning
+                  onBlur={(e) => handleChange("subtitle", e.currentTarget.textContent || "")}
+                  className="text-lg md:text-xl text-zinc-400 mb-12 max-w-2xl leading-relaxed outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                >
+                  {block.content.subtitle}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleChange("primaryBtn", e.currentTarget.textContent || "")}
+                    className="px-8 py-4 bg-amber-500 text-black font-black rounded-2xl hover:bg-amber-400 transition-all hover:scale-105 shadow-[0_0_30px_rgba(251,191,36,0.3)] outline-none"
+                  >
+                    {block.content.primaryBtn}
+                  </button>
+                  <button 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleChange("secondaryBtn", e.currentTarget.textContent || "")}
+                    className="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 transition-all outline-none"
+                  >
+                    {block.content.secondaryBtn}
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 relative group">
+                <div className="absolute -inset-4 bg-amber-500/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                <img 
+                  src={block.content.image} 
+                  alt="Hero" 
+                  className="relative rounded-[2rem] border border-white/10 shadow-2xl w-full object-cover aspect-video lg:aspect-square cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => handleImageUpload("image")}
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                  <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-xs font-bold flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    Cambiar Imagen
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
       );
+
     case "features":
       return (
-        <section className="py-12 px-4">
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="card p-6">
-              <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xl mb-4">
-                ⚡
-              </div>
-              <h3 className="text-xl font-bold mb-2">Rápido</h3>
-              <p className="text-muted">
-                Carga inmediata y alto rendimiento optimizado.
-              </p>
-            </div>
-            <div className="card p-6">
-              <div className="w-12 h-12 rounded-lg bg-primary-2/20 flex items-center justify-center text-primary-2 font-bold text-xl mb-4">
-                🛠️
-              </div>
-              <h3 className="text-xl font-bold mb-2">Flexible</h3>
-              <p className="text-muted">
-                Bloques reutilizables y edición simple.
-              </p>
-            </div>
-            <div className="card p-6">
-              <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center text-accent font-bold text-xl mb-4">
-                🔒
-              </div>
-              <h3 className="text-xl font-bold mb-2">Seguro</h3>
-              <p className="text-muted">
-                Buenas prácticas listas para producción.
-              </p>
-            </div>
-          </div>
-        </section>
-      );
-    case "cta":
-      return (
-        <section className="py-12 px-4">
-          <div className="card max-w-4xl mx-auto text-center p-12 bg-gradient-to-b from-card to-bg-alt">
-            <h2 className="text-3xl font-bold mb-4">
-              Listo para lanzar tu proyecto?
+        <section className="py-24 px-6 bg-zinc-950/50">
+          <div className="max-w-6xl mx-auto">
+            <h2 
+              contentEditable 
+              suppressContentEditableWarning
+              onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
+              className="text-3xl md:text-5xl font-black text-center mb-16 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+            >
+              {block.content.title}
             </h2>
-            <p className="text-muted mb-8">
-              Publica tu landing page en cuestión de minutos.
-            </p>
-            <a href="#" className="btn btn-primary px-8 py-3 text-lg">
-              Crear cuenta gratis
-            </a>
+            <div className="grid md:grid-cols-3 gap-8">
+              {block.content.items.map((item: any, i: number) => (
+                <div key={i} className="p-8 rounded-3xl bg-zinc-900/50 border border-white/5 hover:border-amber-500/30 transition-all group">
+                  <div className="text-4xl mb-6 group-hover:scale-110 transition-transform inline-block">{item.icon}</div>
+                  <h3 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleListItemChange("items", i, "title", e.currentTarget.textContent || "")}
+                    className="text-xl font-bold mb-4 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  >
+                    {item.title}
+                  </h3>
+                  <p 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleListItemChange("items", i, "desc", e.currentTarget.textContent || "")}
+                    className="text-zinc-500 leading-relaxed outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  >
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       );
+
+    case "testimonials":
+      return (
+        <section className="py-24 px-6">
+          <div className="max-w-6xl mx-auto">
+            <h2 
+              contentEditable 
+              suppressContentEditableWarning
+              onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
+              className="text-3xl md:text-5xl font-black text-center mb-16 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+            >
+              {block.content.title}
+            </h2>
+            <div className="grid md:grid-cols-2 gap-8">
+              {block.content.items.map((item: any, i: number) => (
+                <div key={i} className="p-8 rounded-3xl bg-white/5 border border-white/5 relative">
+                  <div className="absolute top-8 right-8 text-amber-500/20"><Star className="w-12 h-12 fill-current" /></div>
+                  <p 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleListItemChange("items", i, "text", e.currentTarget.textContent || "")}
+                    className="text-lg italic text-zinc-300 mb-8 relative z-10 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  >
+                    "{item.text}"
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <div className="relative group/avatar">
+                      <img 
+                        src={item.avatar} 
+                        alt={item.name} 
+                        className="w-12 h-12 rounded-full border border-amber-500/20 cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => handleListItemImageUpload("items", i, "avatar")}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 pointer-events-none">
+                        <ImageIcon className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 
+                        contentEditable 
+                        suppressContentEditableWarning
+                        onBlur={(e) => handleListItemChange("items", i, "name", e.currentTarget.textContent || "")}
+                        className="font-bold outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                      >
+                        {item.name}
+                      </h4>
+                      <p 
+                        contentEditable 
+                        suppressContentEditableWarning
+                        onBlur={(e) => handleListItemChange("items", i, "role", e.currentTarget.textContent || "")}
+                        className="text-sm text-zinc-500 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                      >
+                        {item.role}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
     case "pricing":
       return (
-        <section className="py-12 px-4">
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="card p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-muted">Starter</h3>
-              <div className="text-3xl font-bold my-4">Gratis</div>
-              <ul className="space-y-2 mb-6 text-muted flex-1">
-                <li>• 1 Proyecto</li>
-                <li>• Analytics básico</li>
-              </ul>
-              <a href="#" className="btn w-full">
-                Elegir
-              </a>
-            </div>
-            <div className="card p-6 flex flex-col border-primary/50 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-primary text-bg text-xs font-bold px-2 py-1">
-                POPULAR
-              </div>
-              <h3 className="text-lg font-bold text-primary">Pro</h3>
-              <div className="text-3xl font-bold my-4">
-                $9<span className="text-sm font-normal text-muted">/mes</span>
-              </div>
-              <ul className="space-y-2 mb-6 text-muted flex-1">
-                <li>• 5 Proyectos</li>
-                <li>• Exportación HTML</li>
-                <li>• Soporte prioritario</li>
-              </ul>
-              <a href="#" className="btn btn-primary w-full">
-                Elegir
-              </a>
-            </div>
-            <div className="card p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-primary-2">Business</h3>
-              <div className="text-3xl font-bold my-4">
-                $29<span className="text-sm font-normal text-muted">/mes</span>
-              </div>
-              <ul className="space-y-2 mb-6 text-muted flex-1">
-                <li>• Ilimitado</li>
-                <li>• API Access</li>
-                <li>• Whitelabel</li>
-              </ul>
-              <a href="#" className="btn w-full">
-                Elegir
-              </a>
+        <section className="py-24 px-6 bg-zinc-950/50">
+          <div className="max-w-6xl mx-auto">
+            <h2 
+              contentEditable 
+              suppressContentEditableWarning
+              onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
+              className="text-3xl md:text-5xl font-black text-center mb-16 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+            >
+              {block.content.title}
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              {block.content.plans.map((plan: any, i: number) => (
+                <div key={i} className={`p-8 rounded-[2.5rem] border ${plan.popular ? "bg-amber-500/10 border-amber-500/50 shadow-[0_0_50px_rgba(251,191,36,0.1)]" : "bg-zinc-900/50 border-white/5"} flex flex-col`}>
+                  {plan.popular && <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-6 block text-center">Más Popular</span>}
+                  <h3 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleListItemChange("plans", i, "name", e.currentTarget.textContent || "")}
+                    className="text-xl font-bold mb-2 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  >
+                    {plan.name}
+                  </h3>
+                  <div className="flex items-baseline gap-1 mb-8">
+                    <span className="text-4xl font-black">$</span>
+                    <span 
+                      contentEditable 
+                      suppressContentEditableWarning
+                      onBlur={(e) => handleListItemChange("plans", i, "price", e.currentTarget.textContent || "")}
+                      className="text-6xl font-black outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                    >
+                      {plan.price}
+                    </span>
+                    <span className="text-zinc-500">/mes</span>
+                  </div>
+                  <ul className="space-y-4 mb-10 flex-grow">
+                    {plan.features.map((f: string, fi: number) => (
+                      <li key={fi} className="flex items-center gap-3 text-sm text-zinc-400">
+                        <Check className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <span 
+                          contentEditable 
+                          suppressContentEditableWarning
+                          onBlur={(e) => {
+                            const newFeatures = [...plan.features];
+                            newFeatures[fi] = e.currentTarget.textContent || "";
+                            handleListItemChange("plans", i, "features", newFeatures as any);
+                          }}
+                          className="outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                        >
+                          {f}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button className={`w-full py-4 rounded-2xl font-black uppercase tracking-wider transition-all ${plan.popular ? "bg-amber-500 text-black hover:bg-amber-400" : "bg-white/5 text-white hover:bg-white/10"}`}>
+                    Elegir Plan
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </section>
       );
+
+    case "cta":
+      return (
+        <section className="py-24 px-6">
+          <div className="max-w-5xl mx-auto p-12 md:p-20 rounded-[3rem] bg-gradient-to-br from-amber-500 to-amber-700 text-black text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+            <div className="relative z-10">
+              <h2 
+                contentEditable 
+                suppressContentEditableWarning
+                onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
+                className="text-4xl md:text-6xl font-black mb-8 leading-tight outline-none hover:outline-dashed hover:outline-black/20"
+              >
+                {block.content.title}
+              </h2>
+              <p 
+                contentEditable 
+                suppressContentEditableWarning
+                onBlur={(e) => handleChange("desc", e.currentTarget.textContent || "")}
+                className="text-xl font-medium mb-12 max-w-2xl mx-auto opacity-80 outline-none hover:outline-dashed hover:outline-black/20"
+              >
+                {block.content.desc}
+              </p>
+              <button 
+                contentEditable 
+                suppressContentEditableWarning
+                onBlur={(e) => handleChange("btn", e.currentTarget.textContent || "")}
+                className="px-12 py-5 bg-black text-white font-black rounded-2xl hover:scale-105 transition-all shadow-2xl outline-none"
+              >
+                {block.content.btn}
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+
+    case "faq":
+      return (
+        <section className="py-24 px-6 bg-zinc-950/50">
+          <div className="max-w-4xl mx-auto">
+            <h2 
+              contentEditable 
+              suppressContentEditableWarning
+              onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
+              className="text-3xl md:text-5xl font-black text-center mb-16 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+            >
+              {block.content.title}
+            </h2>
+            <div className="space-y-6">
+              {block.content.items.map((item: any, i: number) => (
+                <div key={i} className="p-8 rounded-3xl bg-zinc-900/50 border border-white/5">
+                  <h4 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleListItemChange("items", i, "q", e.currentTarget.textContent || "")}
+                    className="text-xl font-bold mb-4 flex items-center gap-3 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  >
+                    <span className="text-amber-500">Q.</span> {item.q}
+                  </h4>
+                  <p 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleListItemChange("items", i, "a", e.currentTarget.textContent || "")}
+                    className="text-zinc-400 leading-relaxed pl-8 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  >
+                    {item.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case "footer":
+      return (
+        <footer className="py-12 px-6 border-t border-white/5 text-center">
+          <div className="flex flex-col items-center gap-6">
+            <Zap className="w-8 h-8 text-amber-500" />
+            <p 
+              contentEditable 
+              suppressContentEditableWarning
+              onBlur={(e) => handleChange("text", e.currentTarget.textContent || "")}
+              className="text-zinc-500 text-sm outline-none hover:outline-dashed hover:outline-cyan-500/50"
+            >
+              {block.content.text}
+            </p>
+            <div className="flex gap-6 text-[10px] uppercase font-black tracking-widest text-zinc-600">
+              <a href="#" className="hover:text-amber-500 transition-colors">Términos</a>
+              <a href="#" className="hover:text-amber-500 transition-colors">Privacidad</a>
+              <a href="#" className="hover:text-amber-500 transition-colors">Soporte</a>
+            </div>
+          </div>
+        </footer>
+      );
+
     default:
       return null;
   }
 }
+

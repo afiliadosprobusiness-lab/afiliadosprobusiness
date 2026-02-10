@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Layout,
   Copy,
@@ -18,47 +17,13 @@ import {
 } from "lucide-react";
 
 export default function HubPage() {
+  const { user, loading, logout } = useAuth(true);
   const router = useRouter();
   const { t } = useLanguage();
-  const [userName, setUserName] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Escuchar cambios en la autenticación de Firebase
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserName(user.displayName || user.email?.split("@")[0] || "Creador");
-        setLoading(false);
-      } else {
-        // Fallback a localStorage si Firebase no ha cargado o para mantener compatibilidad
-        const session = localStorage.getItem("fp_session");
-        if (session) {
-          try {
-            const parsed = JSON.parse(session);
-            setUserName(
-              parsed.name || parsed.email?.split("@")[0] || "Creador",
-            );
-            setLoading(false);
-          } catch (e) {
-            router.push("/auth");
-          }
-        } else {
-          router.push("/auth");
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+  const userName = user?.name || "Creador";
 
   const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      localStorage.removeItem("fp_session");
-      router.push("/auth");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    await logout();
   };
 
   if (loading) {

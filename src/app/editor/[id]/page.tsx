@@ -6,8 +6,10 @@ import { Save, Eye, Code, Smartphone, Monitor, ArrowLeft, CheckCircle, Globe, Ro
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function EditorPage() {
+  const { user: session, loading: authLoading } = useAuth(true);
   const params = useParams();
   const id = params.id as string;
   const pathname = usePathname();
@@ -22,12 +24,6 @@ export default function EditorPage() {
     { name: t("nav.hub"), href: "/hub" },
   ];
 
-  const [session, setSession] = useState<{ email?: string } | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("fastPageUser") || localStorage.getItem("fp_session");
-    if (saved) setSession(JSON.parse(saved));
-  }, []);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);

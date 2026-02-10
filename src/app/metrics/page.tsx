@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -26,22 +25,17 @@ import {
 } from "lucide-react";
 
 export default function MetricsPage() {
+  const { user, loading: authLoading } = useAuth(true);
   const router = useRouter();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [activeMetric, setActiveMetric] = useState("all");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setLoading(false);
-      } else {
-        router.push("/auth");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+    if (!authLoading) {
+      setLoading(false);
+    }
+  }, [authLoading]);
 
   // Datos simulados para las métricas (esto vendría de una API real de analíticas)
   const stats = [

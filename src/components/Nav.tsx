@@ -2,29 +2,18 @@
 
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
 
-type Session = {
-  email?: string;
-  name?: string;
-};
-
 export default function Nav() {
-  const [session, setSession] = useState<Session | null>(null);
+  const { user: session, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    const saved =
-      localStorage.getItem("fastPageUser") ||
-      localStorage.getItem("fp_session");
-    setSession(saved ? JSON.parse(saved) : null);
-  }, []);
 
   // Close menu when route changes
   useEffect(() => {
@@ -43,13 +32,22 @@ export default function Nav() {
     };
   }, [isOpen]);
 
-  const navLinks = [
-    { name: t("nav.home"), href: "/", emoji: "" },
-    { name: t("nav.builder"), href: "/builder", emoji: "" },
-    { name: t("nav.templates"), href: "/cloner", emoji: "" },
-    { name: t("nav.cloner"), href: "/cloner/web", emoji: "" },
-    { name: t("nav.hub"), href: "/hub", emoji: "" },
-  ];
+  const navLinks = useMemo(() => {
+    if (!session) {
+      return [
+        { name: t("nav.home"), href: "/", emoji: "" },
+      ];
+    }
+
+    return [
+      { name: t("nav.hub"), href: "/hub", emoji: "" },
+      { name: t("nav.builder"), href: "/builder", emoji: "" },
+      { name: t("nav.templates"), href: "/cloner", emoji: "" },
+      { name: t("nav.cloner"), href: "/cloner/web", emoji: "" },
+      { name: t("nav.metrics"), href: "/metrics", emoji: "" },
+      { name: t("nav.settings"), href: "/settings", emoji: "" },
+    ];
+  }, [session, t]);
 
   if (pathname.startsWith("/editor")) return null;
 
@@ -108,11 +106,7 @@ export default function Nav() {
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted">{session.email}</span>
               <button
-                onClick={() => {
-                  localStorage.removeItem("fastPageUser");
-                  localStorage.removeItem("fp_session");
-                  window.location.href = "/auth";
-                }}
+                onClick={logout}
                 className="text-sm text-muted hover:text-red-400"
               >
                 {t("nav.logout")}
@@ -231,11 +225,7 @@ export default function Nav() {
                   </Link>
                 ) : (
                   <button
-                    onClick={() => {
-                      localStorage.removeItem("fastPageUser");
-                      localStorage.removeItem("fp_session");
-                      window.location.href = "/auth";
-                    }}
+                    onClick={logout}
                     className="btn btn-secondary w-full py-4 text-lg text-red-400 rounded-full"
                   >
                     {t("nav.logout")}

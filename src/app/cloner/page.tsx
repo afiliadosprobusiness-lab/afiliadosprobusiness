@@ -4,6 +4,7 @@ import { useState } from "react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Utensils,
   Cpu,
@@ -48,6 +49,7 @@ import {
 } from "lucide-react";
 
 export default function ClonerPage() {
+  const { user, loading } = useAuth(true);
   const { t } = useLanguage();
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
 
