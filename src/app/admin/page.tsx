@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { 
   collection, 
   doc, 
+  setDoc,
   updateDoc, 
   deleteDoc, 
   query, 
@@ -40,14 +41,44 @@ interface UserData {
 export default function AdminPanel() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const router = useRouter();
 
+  const loadData = async () => {
+    setRefreshing(true);
+    const usersRef = collection(db, "users");
+    try {
+      setDebugInfo("Actualizando lista...");
+      const unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
+        const usersData: UserData[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          usersData.push({ uid: doc.id, ...data } as UserData);
+        });
+        usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
+        setUsers(usersData);
+        setDebugInfo(`Última actualización: ${new Date().toLocaleTimeString()}`);
+        setLoading(false);
+        setRefreshing(false);
+      }, (err) => {
+        setError(`Error en tiempo real: ${err.message}`);
+        setLoading(false);
+        setRefreshing(false);
+      });
+      return unsubscribeSnapshot;
+    } catch (err: any) {
+      setError(`Error al conectar: ${err.message}`);
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    // Verificación ultra-rápida de admin
+    // Verificación de sesión local primero
     const session = localStorage.getItem("fp_session");
     if (session) {
       const userData = JSON.parse(session);
@@ -59,7 +90,7 @@ export default function AdminPanel() {
       }
     }
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.replace("/auth");
         return;
@@ -72,34 +103,43 @@ export default function AdminPanel() {
 
       setAuthorized(true);
       
-      // Solo cargar datos si es admin
+      // Sincronizar al propio admin si no existe en Firestore
+      try {
+        const adminRef = doc(db, "users", user.uid);
+        await setDoc(adminRef, {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || "Super Admin",
+          lastLogin: Date.now(),
+          role: "admin",
+          status: "active"
+        }, { merge: true });
+      } catch (e) {
+        console.error("Error sincronizando admin:", e);
+      }
+
+      // Cargar lista de usuarios
       const usersRef = collection(db, "users");
-      setDebugInfo("Cargando...");
+      setDebugInfo("Conectando con Firestore...");
       
       const unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
-        console.log("Snapshot recibido de Firestore. Tamaño:", querySnapshot.size);
-        setDebugInfo(`Documentos en Firestore: ${querySnapshot.size}`);
+        console.log("Admin: Snapshot recibido. Documentos:", querySnapshot.size);
+        setDebugInfo(`Conectado. Usuarios encontrados: ${querySnapshot.size}`);
         
-        if (querySnapshot.empty) {
-          console.warn("La colección 'users' está vacía en Firestore.");
-          setUsers([]);
-        } else {
-          const usersData: UserData[] = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            console.log("Cargando usuario de Firestore:", data.email);
-            usersData.push({ uid: doc.id, ...data } as UserData);
-          });
-          
-          // Ordenar manualmente para evitar requerir índices compuestos de Firestore
-          usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
-          setUsers(usersData);
-        }
+        const usersData: UserData[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          usersData.push({ uid: doc.id, ...data } as UserData);
+        });
+        
+        // Ordenar por último acceso
+        usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
+        setUsers(usersData);
         setLoading(false);
         setError(null);
       }, (err) => {
-        console.error("Error crítico leyendo Firestore:", err);
-        setError(`Error de base de datos: ${err.message}`);
+        console.error("Admin: Error en onSnapshot:", err);
+        setError(`Error de acceso a Firestore: ${err.message}. Verifica las reglas de seguridad.`);
         setLoading(false);
       });
 
@@ -185,6 +225,23 @@ export default function AdminPanel() {
               <p className="text-zinc-500 text-xs font-bold uppercase mb-1">Activos</p>
               <p className="text-2xl font-bold text-emerald-500">{users.filter(u => u.status !== 'disabled' && u.status !== 'suspended').length}</p>
             </div>
+            <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex flex-col justify-between">
+            <div>
+              <p className="text-zinc-500 text-xs font-bold uppercase mb-1">Estado de Sincronización</p>
+              <p className="text-sm font-medium text-emerald-500 flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                Sincronizado
+              </p>
+            </div>
+            <button 
+              onClick={() => window.location.reload()} 
+              disabled={refreshing}
+              className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              Forzar Actualización
+            </button>
+          </div>
           </div>
 
           <div className="relative w-full md:w-96">

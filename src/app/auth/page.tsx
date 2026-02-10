@@ -54,62 +54,30 @@ function AuthContent() {
 
   // Función centralizada para sincronizar usuario con Firestore
   const syncUserToFirestore = async (user: any) => {
-    if (!user) return;
+    if (!user || !user.uid) return;
+    
     try {
-      console.log("Sincronizando usuario con Firestore:", user.email);
       const userRef = doc(db, "users", user.uid);
+      const is_admin = user.email === "admin@fastpage.com";
       
-      const userData: any = {
+      const userData = {
         uid: user.uid,
         email: user.email,
-        name: user.displayName || user.name || "Usuario",
+        name: user.displayName || user.name || (user.email ? user.email.split('@')[0] : "Usuario"),
         photoURL: user.photoURL || "",
         lastLogin: Date.now(),
         status: "active",
-        role: user.email === "admin@fastpage.com" ? "admin" : "user",
+        role: is_admin ? "admin" : "user",
       };
 
-      // Usar Promise.race para no quedar bloqueado si Firestore está inaccesible (Adblockers)
-      const savePromise = setDoc(userRef, userData, { merge: true });
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Timeout sync")), 4000)
-      );
-
-      await Promise.race([savePromise, timeoutPromise]);
-      console.log("Sincronización exitosa en Firestore para:", user.email);
+      // Intento de guardado ultra-rápido
+      await setDoc(userRef, userData, { merge: true });
       
-      // Actualizar sesión local (esto es instantáneo)
-      localStorage.setItem(
-        "fp_session",
-        JSON.stringify({
-          email: user.email,
-          name: userData.name,
-          uid: user.uid,
-          photoURL: userData.photoURL,
-        })
-      );
+      // Actualizar sesión local
+      localStorage.setItem("fp_session", JSON.stringify(userData));
       return true;
     } catch (error: any) {
-      console.error("Error en syncUserToFirestore:", error);
-      
-      // Si falla, al menos intentamos guardar la sesión local para que el resto de la app funcione
-      try {
-        localStorage.setItem(
-          "fp_session",
-          JSON.stringify({
-            email: user.email,
-            name: user.displayName || user.name || "Usuario",
-            uid: user.uid,
-            photoURL: user.photoURL || "",
-          })
-        );
-      } catch (e) {}
-
-      if (error.code === 'permission-denied') {
-        console.error("Permiso denegado en Firestore.");
-      } else if (error.message === "Timeout sync") {
-        console.warn("La sincronización con Firestore tardó demasiado. Probablemente bloqueado por el navegador.");
-      }
+      console.error("Error sincronizando:", error);
       return false;
     }
   };
@@ -140,11 +108,19 @@ function AuthContent() {
       // 2. Actualizar perfil (nombre)
       await updateProfile(user, { displayName: name });
 
-      // 3. Sincronizar con Firestore
-      await syncUserToFirestore({ ...user, displayName: name });
+      // 3. Sincronizar con Firestore - Esperar a que se complete para asegurar que el Admin lo vea
+      await syncUserToFirestore({ 
+        uid: user.uid, 
+        email: user.email, 
+        displayName: name,
+        photoURL: "" 
+      });
 
       showToast("¡Cuenta creada exitosamente!");
-      setTimeout(() => router.push("/hub"), 1500);
+      
+      // Redirección basada en el rol
+      const target = email === "admin@fastpage.com" ? "/admin" : "/hub";
+      setTimeout(() => router.push(target), 1000);
     } catch (error: any) {
       console.error(error);
       if (error.code === "auth/email-already-in-use") {
