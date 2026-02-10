@@ -261,7 +261,7 @@ export default function SettingsPage() {
           
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-2 px-6 py-3 bg-zinc-900/50 border border-white/10 rounded-2xl text-zinc-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-all duration-300 group"
+            className="flex items-center gap-2 px-6 py-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 hover:bg-red-500/20 transition-all duration-300 group"
           >
             <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-bold uppercase tracking-wider text-xs">{t("settings.logout")}</span>

@@ -1,12 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const { user: session, loading } = useAuth();
+  const router = useRouter();
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  useEffect(() => {
+    if (!loading && session) {
+      router.replace("/hub");
+    }
+  }, [session, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="animate-pulse">
+          <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
+            <div className="w-6 h-6 bg-yellow-500 rounded-full animate-ping" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (session) return null;
 
   const testimonials = [
     {
@@ -194,11 +218,11 @@ export default function HomePage() {
       </div>
 
       {/* --- HERO SECTION --- */}
-      <section className="relative min-h-screen flex flex-col items-center justify-between px-4 overflow-hidden pt-20 pb-10 z-10">
-        <div className="flex-1 flex flex-col items-center justify-center w-full z-10">
-          <div className="relative z-10 max-w-4xl w-full text-center flex flex-col items-center gap-8">
+      <section className="relative min-h-screen flex flex-col items-center px-4 overflow-hidden pt-6 pb-20 z-10">
+        <div className="flex-1 flex flex-col items-center justify-center md:justify-start md:pt-24 w-full z-10">
+          <div className="relative z-10 max-w-4xl w-full text-center flex flex-col items-center gap-6 md:gap-8">
             {/* Top Label */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-medium text-zinc-800 dark:text-white animate-fade-in border border-yellow-500/30 shadow-[0_0_15px_rgba(255,215,0,0.1)]">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-medium text-zinc-800 dark:text-white animate-fade-in border border-yellow-500/30 shadow-[0_0_15px_rgba(255,215,0,0.1)] mb-4 md:mb-0">
               <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse shadow-[0_0_10px_#FFD700]" />
               <span className="text-gold-glow tracking-widest uppercase text-[10px]">
                 {t("hero.tag")}
@@ -207,38 +231,41 @@ export default function HomePage() {
 
             {/* Main Title */}
             <h1
-              className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up px-2"
+              className="text-[42px] sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground animate-slide-up px-4 leading-[1.1] w-full"
               style={{ animationDelay: "0.1s" }}
             >
-              {t("hero.title_start")} <br />
-              <span className="text-gold-gradient drop-shadow-lg">
+              <span className="text-gold-gradient drop-shadow-lg block sm:inline-block">{t("hero.title_start")}</span> 
+              <span className="hidden sm:inline"> </span>
+              <br className="sm:hidden" />
+              <span className="text-gold-gradient drop-shadow-lg block sm:inline-block mt-2 sm:mt-0">
                 {t("hero.title_highlight")}
               </span>
             </h1>
 
             {/* Subtitle */}
             <p
-              className="text-base md:text-xl text-zinc-600 dark:text-white font-medium max-w-2xl animate-slide-up px-4"
+              className="text-base md:text-xl text-white font-medium max-w-3xl animate-slide-up px-6 md:px-4 leading-relaxed tracking-wide text-center mt-2"
               style={{ animationDelay: "0.2s" }}
             >
               {t("hero.subtitle_start")}{" "}
-              <span className="text-gold-glow font-bold">
+              <span className="text-gold-glow font-bold text-tornasolado">
                 {t("hero.subtitle_highlight")}
               </span>{" "}
+              <span className="block my-2"></span>
               {t("hero.subtitle_end_1")}{" "}
-              <span className="text-gold-glow font-bold">
+              <span className="text-gold-glow font-bold text-tornasolado">
                 {t("hero.subtitle_end_highlight")}
               </span>
             </p>
 
             {/* CTA Buttons */}
             <div
-              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mt-6 animate-slide-up w-full sm:w-auto px-4 sm:px-0"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-8 md:mt-10 animate-slide-up w-full max-w-[320px] sm:max-w-none px-4 sm:px-0 mx-auto"
               style={{ animationDelay: "0.3s" }}
             >
               <Link
                 href="/auth"
-                className="btn btn-deluxe w-full sm:w-auto px-10 py-4 text-lg group hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                className="btn btn-deluxe w-full sm:w-auto px-10 py-5 text-lg group hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <span>🔥</span>
                 {t("hero.cta_create")}
@@ -247,7 +274,7 @@ export default function HomePage() {
 
               <Link
                 href="/auth"
-                className="btn btn-deluxe-outline w-full sm:w-auto px-10 py-4 text-lg"
+                className="btn btn-deluxe-outline w-full sm:w-auto px-10 py-5 text-lg"
               >
                 {t("hero.cta_clone")}
               </Link>
@@ -257,30 +284,32 @@ export default function HomePage() {
 
         {/* Tech Stack Strip (moved from footer to hero bottom) */}
         <div
-          className="w-full z-10 animate-fade-in mt-12 md:mt-0"
+          className="w-full z-10 animate-fade-in mt-32 md:mt-0 pb-10"
           style={{ animationDelay: "0.5s" }}
         >
           <p className="text-center text-sm mb-6 uppercase tracking-widest font-bold text-gold-gradient">
             {t("hero.payments")}
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-500 px-4">
-            <span className="text-lg sm:text-xl font-bold text-orange-500">BCP</span>
-            <span className="text-lg sm:text-xl font-bold text-blue-600">BBVA</span>
-            <span className="text-lg sm:text-xl font-bold text-red-600">Scotiabank</span>
-            <span className="text-lg sm:text-xl font-bold text-purple-500">Yape</span>
-            <span className="text-lg sm:text-xl font-bold text-cyan-400">Plin</span>
+          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 md:gap-16 opacity-70 hover:opacity-100 transition-all duration-500 px-4 group/payments">
+            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-orange-500 active:text-orange-500 hover:scale-110 transition-all duration-300 cursor-default">BCP</span>
+            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-blue-600 active:text-blue-600 hover:scale-110 transition-all duration-300 cursor-default">BBVA</span>
+            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-red-600 active:text-red-600 hover:scale-110 transition-all duration-300 cursor-default">Scotiabank</span>
+            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-purple-500 active:text-purple-500 hover:scale-110 transition-all duration-300 cursor-default">Yape</span>
+            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-cyan-400 active:text-cyan-400 hover:scale-110 transition-all duration-300 cursor-default">Plin</span>
           </div>
         </div>
       </section>
 
       {/* --- TESTIMONIALS SECTION --- */}
-      <section className="py-24 relative z-10 bg-black/20 backdrop-blur-sm border-t border-white/5 overflow-hidden">
+      <section className="py-16 md:py-24 relative z-10 bg-black/20 backdrop-blur-sm border-t border-white/5 overflow-hidden">
         <div className="w-full">
-          <div className="text-center mb-16 px-4">
+          <div className="text-center mb-10 md:mb-16 px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-              {t("testimonials.title")}
+              {t("testimonials.title").split(' ').map((word, i) => 
+                i === 2 || i === 3 ? <span key={i} className="text-gold-gradient"> {word} </span> : word + ' '
+              )}
             </h2>
-            <p className="text-zinc-600 dark:!text-white text-lg max-w-2xl mx-auto">
+            <p className="text-white text-lg max-w-2xl mx-auto leading-relaxed mt-4">
               {t("testimonials.subtitle")}
             </p>
           </div>
@@ -294,8 +323,8 @@ export default function HomePage() {
                   className="glass w-[350px] p-6 rounded-2xl hover:bg-white/5 transition-colors duration-300 flex flex-col gap-4 flex-shrink-0"
                 >
                   {/* User Info */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border border-zinc-200 dark:border-white/20">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20">
                       <img
                         src={t.image}
                         alt={t.name}
@@ -303,17 +332,17 @@ export default function HomePage() {
                       />
                     </div>
                     <div>
-                      <h3 className="font-bold text-foreground text-lg">
+                      <h3 className="font-bold text-white text-lg tracking-tight">
                         {t.name}
                       </h3>
-                      <p className="text-xs text-zinc-500 dark:text-yellow-400 uppercase tracking-wider font-semibold">
+                      <p className="text-xs text-yellow-400 uppercase tracking-widest font-bold mt-1">
                         {t.role}
                       </p>
                     </div>
                   </div>
 
                   {/* Text */}
-                  <p className="text-zinc-700 dark:!text-white text-sm leading-relaxed mb-6 font-medium">
+                  <p className="text-white text-sm leading-loose mb-8 font-medium italic opacity-90">
                     &quot;{t.text}&quot;
                   </p>
 
@@ -349,8 +378,8 @@ export default function HomePage() {
             <div className="md:hidden flex flex-col items-center gap-6">
               <div className="glass w-full max-w-[350px] p-6 rounded-2xl hover:bg-white/5 transition-colors duration-300 flex flex-col gap-4 animate-fade-in">
                 {/* User Info */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border border-zinc-200 dark:border-white/20">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20">
                     <img
                       src={testimonials[currentTestimonial].image}
                       alt={testimonials[currentTestimonial].name}
@@ -358,17 +387,17 @@ export default function HomePage() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-bold text-foreground text-lg">
+                    <h3 className="font-bold text-white text-lg tracking-tight">
                       {testimonials[currentTestimonial].name}
                     </h3>
-                    <p className="text-xs text-zinc-500 dark:text-yellow-400 uppercase tracking-wider font-semibold">
+                    <p className="text-xs text-yellow-400 uppercase tracking-widest font-bold mt-1">
                       {testimonials[currentTestimonial].role}
                     </p>
                   </div>
                 </div>
 
                 {/* Text */}
-                <p className="text-zinc-700 dark:!text-white text-sm leading-relaxed mb-6 font-medium min-h-[80px]">
+                <p className="text-white text-sm leading-loose mb-8 font-medium italic opacity-90 min-h-[80px]">
                   &quot;{testimonials[currentTestimonial].text}&quot;
                 </p>
 
@@ -454,11 +483,13 @@ export default function HomePage() {
       </section>
 
       {/* --- FAQ SECTION --- */}
-      <section className="py-24 px-4 relative z-10">
+      <section className="py-16 md:py-24 px-4 relative z-10">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 md:mb-16">
             <h2 className="text-3xl md:text-4xl font-extrabold mb-4 text-foreground">
-              {t("faq.title")}
+              {t("faq.title").split(' ').map((word, i) => 
+                i === 1 ? <span key={i} className="text-gold-gradient"> {word} </span> : word + ' '
+              )}
             </h2>
             <p className="text-zinc-600 dark:!text-white text-lg font-medium">
               {t("faq.subtitle")}
@@ -492,7 +523,7 @@ export default function HomePage() {
                       </svg>
                     </span>
                   </summary>
-                  <div className="px-6 pb-6 text-zinc-700 dark:!text-white border-t border-zinc-200 dark:border-white/5 pt-4 font-medium leading-relaxed">
+                  <div className="px-6 pb-6 text-white border-t border-white/5 pt-6 font-medium leading-loose tracking-wide opacity-90">
                     <p>{faq.a}</p>
                   </div>
                 </details>

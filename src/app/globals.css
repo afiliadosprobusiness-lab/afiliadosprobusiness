@@ -8,8 +8,8 @@
   --foreground: #ffffff;
   --primary: #ffffff;
   --primary-foreground: #000000;
-  --muted: #ffffff;
-  --muted-foreground: #ffffff;
+  --muted: rgba(255, 255, 255, 0.8);
+  --muted-foreground: rgba(255, 255, 255, 0.8);
   --border: rgba(255, 255, 255, 0.1);
 
   /* Gold Theme Colors - Dark Mode (Bright for glow) */
@@ -263,45 +263,6 @@ details[open] summary .text-gold-iridescent {
 /* Glass Utility */
 .glass {
   @apply bg-black/40 backdrop-blur-lg border border-white/10;
-}
-
-/* GLOBAL TEXT COLOR OVERRIDE */
-@layer base {
-  body,
-  p,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  span,
-  div,
-  li,
-  a,
-  [class*="text-zinc-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-    .text-gold-iridescent
-  ):not([class*="text-yellow-"]),
-  [class*="text-gray-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-    .text-gold-iridescent
-  ):not([class*="text-yellow-"]),
-  [class*="text-slate-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-    .text-gold-iridescent
-  ):not([class*="text-yellow-"]),
-  [class*="text-neutral-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-    .text-gold-iridescent
-  ):not([class*="text-yellow-"]),
-  [class*="text-stone-"]:not(.text-gold-glow):not(.text-gold-gradient):not(
-    .text-gold-iridescent
-  ):not([class*="text-yellow-"]),
-  .text-muted-foreground {
-    color: #ffffff !important;
-  }
-
-  /* Force black text to stay black if explicitly set */
-  .text-black {
-    color: #000000 !important;
-  }
 }
 
 /* Minimalist Nav Glow Effect */

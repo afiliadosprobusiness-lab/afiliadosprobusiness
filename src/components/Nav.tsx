@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Zap, LogOut } from "lucide-react";
 
 export default function Nav() {
   const { user: session, logout } = useAuth();
@@ -55,9 +55,17 @@ export default function Nav() {
       <div className="hidden md:block">
         {/* Logo - Top Left */}
         <div className="fixed top-8 left-8 z-50">
-          <Link href="/" className="flex items-center gap-2 group transition-all" aria-label="Fast Page Home">
-            <Zap className="w-8 h-8 text-amber-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.7)] group-hover:scale-110 transition-transform duration-300" />
-          </Link>
+          {session ? (
+            <div className="flex items-center gap-2 cursor-default" aria-label="Fast Page Home">
+              <Zap className="w-8 h-8 text-amber-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.7)]" />
+              <span className="text-lg font-black tracking-tighter text-gold-gradient drop-shadow-sm">FAST PAGE</span>
+            </div>
+          ) : (
+            <Link href="/" className="flex items-center gap-2 group transition-all" aria-label="Fast Page Home">
+              <Zap className="w-8 h-8 text-amber-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.7)] group-hover:scale-110 transition-transform duration-300" />
+              <span className="text-lg font-black tracking-tighter text-gold-gradient drop-shadow-sm group-hover:brightness-110 transition-all">FAST PAGE</span>
+            </Link>
+          )}
         </div>
 
         {/* Center Minimalist Nav */}
@@ -83,7 +91,7 @@ export default function Nav() {
             <>
               <Link
                 href="/auth?tab=login"
-                className="nav-link-glow flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-bold text-zinc-400 transition-all"
+                className="nav-link-glow flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-bold text-white transition-all"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -104,7 +112,7 @@ export default function Nav() {
               </Link>
               <Link
                 href="/auth?tab=register"
-                className="nav-link-glow flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-bold text-zinc-400 transition-all"
+                className="nav-link-glow flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-bold text-white transition-all"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -125,12 +133,14 @@ export default function Nav() {
             </>
           ) : (
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted">{session.email}</span>
+              <span className="text-sm text-zinc-400 font-medium">{session.email}</span>
               <button
                 onClick={logout}
-                className="text-sm text-muted hover:text-red-400"
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full transition-all duration-300 border border-red-500/20 group"
+                title={t("nav.logout")}
               >
-                {t("nav.logout")}
+                <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold uppercase tracking-wider">{t("nav.logout")}</span>
               </button>
             </div>
           )}
@@ -140,10 +150,17 @@ export default function Nav() {
       {/* Mobile Navigation Layout */}
       <div className="md:hidden">
         <header className="fixed top-0 left-0 w-full h-16 z-50 flex items-center justify-between px-4 bg-bg/80 backdrop-blur-md border-b border-border">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg" aria-label="Fast Page Home">
-            <Zap className="w-6 h-6 text-amber-400" />
-            <span>Fast Page</span>
-          </Link>
+          {session ? (
+            <div className="flex items-center gap-2 font-bold text-lg cursor-default" aria-label="Fast Page Home">
+              <Zap className="w-6 h-6 text-amber-400" />
+              <span>Fast Page</span>
+            </div>
+          ) : (
+            <Link href="/" className="flex items-center gap-2 font-bold text-lg" aria-label="Fast Page Home">
+              <Zap className="w-6 h-6 text-amber-400" />
+              <span>Fast Page</span>
+            </Link>
+          )}
 
           <div className="flex items-center gap-1">
             <button
@@ -229,7 +246,7 @@ export default function Nav() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-2xl font-medium py-4 border-b border-white/5 text-zinc-600 dark:text-white hover:text-white transition-colors"
+                    className="text-2xl font-medium py-4 border-b border-white/5 text-white hover:text-white transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -255,9 +272,10 @@ export default function Nav() {
                 ) : (
                   <button
                     onClick={logout}
-                    className="btn btn-secondary w-full py-4 text-lg text-red-400 rounded-full"
+                    className="flex items-center justify-center gap-3 w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full border border-red-500/20 transition-all active:scale-95"
                   >
-                    {t("nav.logout")}
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-bold uppercase tracking-wider">{t("nav.logout")}</span>
                   </button>
                 )}
               </div>

@@ -9,6 +9,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   updateProfile,
 } from "firebase/auth";
@@ -142,34 +144,47 @@ function AuthContent() {
     }
   };
 
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const user = result.user;
+          // Guardar/Actualizar en Firestore
+          await setDoc(
+            doc(db, "users", user.uid),
+            {
+              name: user.displayName,
+              email: user.email,
+              lastLogin: Date.now(),
+              uid: user.uid,
+            },
+            { merge: true },
+          );
+
+          localStorage.setItem(
+            "fp_session",
+            JSON.stringify({
+              email: user.email,
+              name: user.displayName,
+              uid: user.uid,
+            }),
+          );
+
+          router.push("/hub");
+        }
+      } catch (error: any) {
+        console.error("Redirect Error:", error);
+        showToast("Error al volver de Google: " + error.message);
+      }
+    };
+    checkRedirect();
+  }, [router]);
+
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Guardar/Actualizar en Firestore
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
-          name: user.displayName,
-          email: user.email,
-          lastLogin: Date.now(),
-          uid: user.uid,
-        },
-        { merge: true },
-      );
-
-      localStorage.setItem(
-        "fp_session",
-        JSON.stringify({
-          email: user.email,
-          name: user.displayName,
-          uid: user.uid,
-        }),
-      );
-
-      router.push("/hub");
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error(error);
       showToast("Error con Google: " + error.message);
