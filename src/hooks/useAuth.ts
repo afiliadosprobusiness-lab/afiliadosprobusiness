@@ -32,9 +32,23 @@ export function useAuth(requireAuth = false) {
     // 2. Listen to Firebase Auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Fetch extra data from Firestore (status)
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        const userDataFromDb = userDoc.data();
+        let userDataFromDb = null;
+        
+        try {
+          // Usar un Promise.race para evitar que getDoc bloquee la UI indefinidamente
+          // si Firestore está bloqueado por el cliente (Adblockers) o hay mala red.
+          const fetchDoc = getDoc(doc(db, "users", firebaseUser.uid));
+          const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout Firestore")), 3500)
+          );
+
+          const userDoc = await Promise.race([fetchDoc, timeout]) as any;
+          userDataFromDb = userDoc.data();
+        } catch (err) {
+          console.warn("Firestore inaccesible o timeout. Usando datos básicos de Auth.", err);
+          // Si falla (por bloqueo de cliente o timeout), permitimos continuar 
+          // con los datos básicos de Auth para no bloquear al usuario.
+        }
 
         if (userDataFromDb?.status === 'suspended' || userDataFromDb?.status === 'disabled') {
           await signOut(auth);

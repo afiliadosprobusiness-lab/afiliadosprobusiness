@@ -69,11 +69,16 @@ function AuthContent() {
         role: user.email === "admin@fastpage.com" ? "admin" : "user",
       };
 
-      // Intentar guardar con un log de éxito
-      await setDoc(userRef, userData, { merge: true });
+      // Usar Promise.race para no quedar bloqueado si Firestore está inaccesible (Adblockers)
+      const savePromise = setDoc(userRef, userData, { merge: true });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout sync")), 4000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
       console.log("Sincronización exitosa en Firestore para:", user.email);
       
-      // Actualizar sesión local
+      // Actualizar sesión local (esto es instantáneo)
       localStorage.setItem(
         "fp_session",
         JSON.stringify({
@@ -85,10 +90,25 @@ function AuthContent() {
       );
       return true;
     } catch (error: any) {
-      console.error("Error crítico en syncUserToFirestore:", error);
-      // Si el error es de permisos, avisar al usuario
+      console.error("Error en syncUserToFirestore:", error);
+      
+      // Si falla, al menos intentamos guardar la sesión local para que el resto de la app funcione
+      try {
+        localStorage.setItem(
+          "fp_session",
+          JSON.stringify({
+            email: user.email,
+            name: user.displayName || user.name || "Usuario",
+            uid: user.uid,
+            photoURL: user.photoURL || "",
+          })
+        );
+      } catch (e) {}
+
       if (error.code === 'permission-denied') {
-        console.error("Permiso denegado en Firestore. Revisa las reglas de seguridad.");
+        console.error("Permiso denegado en Firestore.");
+      } else if (error.message === "Timeout sync") {
+        console.warn("La sincronización con Firestore tardó demasiado. Probablemente bloqueado por el navegador.");
       }
       return false;
     }
@@ -160,8 +180,8 @@ function AuthContent() {
       );
       const user = userCredential.user;
 
-      // Sincronizar con Firestore
-      await syncUserToFirestore(user);
+      // Sincronización en segundo plano (no bloqueante para el usuario)
+      syncUserToFirestore(user);
 
       if (user.email === "admin@fastpage.com") {
         router.push("/admin");
@@ -202,7 +222,8 @@ function AuthContent() {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
-          await syncUserToFirestore(result.user);
+          // Sincronización en segundo plano
+          syncUserToFirestore(result.user);
           
           if (result.user.email === "admin@fastpage.com") {
             router.push("/admin");
@@ -226,14 +247,12 @@ function AuthContent() {
       // Intentamos con Popup primero
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        await syncUserToFirestore(result.user);
+        // Sincronización en segundo plano (mejora UX, evita esperas largas)
+        syncUserToFirestore(result.user);
 
-        // Forzar redirección
-        if (result.user.email === "admin@fastpage.com") {
-          window.location.href = "/admin";
-        } else {
-          window.location.href = "/hub";
-        }
+        // Forzar redirección inmediata
+        const target = result.user.email === "admin@fastpage.com" ? "/admin" : "/hub";
+        window.location.href = target;
       }
     } catch (error: any) {
       console.error("Google Login Error:", error);
