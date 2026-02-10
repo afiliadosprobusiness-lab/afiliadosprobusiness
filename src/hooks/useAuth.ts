@@ -35,11 +35,10 @@ export function useAuth(requireAuth = false) {
         let userDataFromDb = null;
         
         try {
-          // Usar un Promise.race para evitar que getDoc bloquee la UI indefinidamente
-          // si Firestore está bloqueado por el cliente (Adblockers) o hay mala red.
+          // Aumentamos el timeout a 10 segundos para conexiones lentas
           const fetchDoc = getDoc(doc(db, "users", firebaseUser.uid));
           const timeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Timeout Firestore")), 3500)
+            setTimeout(() => reject(new Error("Timeout Firestore")), 10000)
           );
 
           const userDoc = await Promise.race([fetchDoc, timeout]) as any;

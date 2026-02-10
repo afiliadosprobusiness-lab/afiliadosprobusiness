@@ -71,8 +71,13 @@ function AuthContent() {
         role: is_admin ? "admin" : "user",
       };
 
-      // Guardado forzado (sin merge para asegurar que se cree si no existe)
-      await setDoc(userRef, userData, { merge: true });
+      // Aumentamos el timeout a 10 segundos
+      const savePromise = setDoc(userRef, userData, { merge: true });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout sync")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
       console.log("Sincronización exitosa para:", user.email);
       
       // Actualizar sesión local
@@ -80,7 +85,7 @@ function AuthContent() {
       return true;
     } catch (error: any) {
       console.error("Error detallado de sincronización:", error);
-      // Intentar guardar localmente aunque falle Firestore
+      // Fallback local
       localStorage.setItem("fp_session", JSON.stringify({
         uid: user.uid,
         email: user.email,
