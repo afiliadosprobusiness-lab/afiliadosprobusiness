@@ -40,6 +40,7 @@ interface UserData {
 export default function AdminPanel() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const router = useRouter();
@@ -54,16 +55,24 @@ export default function AdminPanel() {
         setAuthorized(true);
         
         // Configurar escucha en tiempo real de Firestore
-        const q = query(collection(db, "users"), orderBy("lastLogin", "desc"));
-        unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
+        const usersRef = collection(db, "users");
+        // Intentar una consulta más simple primero para verificar conexión
+        unsubscribeSnapshot = onSnapshot(usersRef, (querySnapshot) => {
+          console.log("Snapshot recibido, documentos:", querySnapshot.size);
           const usersData: UserData[] = [];
           querySnapshot.forEach((doc) => {
             usersData.push({ uid: doc.id, ...doc.data() } as UserData);
           });
+          
+          // Ordenar manualmente por ahora para evitar problemas de índices en Firestore
+          usersData.sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0));
+          
           setUsers(usersData);
           setLoading(false);
+          setError(null);
         }, (error) => {
           console.error("Error fetching users:", error);
+          setError(error.message);
           setLoading(false);
         });
       }
@@ -185,10 +194,27 @@ export default function AdminPanel() {
                       <p className="text-zinc-500 text-sm">Cargando base de datos...</p>
                     </td>
                   </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl max-w-md mx-auto">
+                        <ShieldAlert className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                        <p className="text-red-400 text-sm font-bold">Error de Conexión</p>
+                        <p className="text-red-400/60 text-xs mt-1">{error}</p>
+                        <p className="text-zinc-500 text-[10px] mt-4 uppercase tracking-widest">Verifica las reglas de Firestore o la consola</p>
+                      </div>
+                    </td>
+                  </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center">
-                      <p className="text-zinc-500 text-sm">No se encontraron usuarios.</p>
+                      <div className="py-8">
+                        <Users className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+                        <p className="text-zinc-500 text-sm font-medium">No se encontraron usuarios en Firestore.</p>
+                        <p className="text-zinc-600 text-xs mt-2 max-w-xs mx-auto">
+                          Los usuarios de "Authentication" deben iniciar sesión al menos una vez para aparecer en este panel.
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
