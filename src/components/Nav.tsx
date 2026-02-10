@@ -47,7 +47,7 @@ export default function Nav() {
     ];
   }, [session, t]);
 
-  if (pathname.startsWith("/editor")) return null;
+  if (pathname === "/auth" || pathname.startsWith("/editor")) return null;
 
   return (
     <>

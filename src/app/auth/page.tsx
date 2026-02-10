@@ -184,14 +184,43 @@ function AuthContent() {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      // Forzar la selección de cuenta para asegurar que el popup/redirect se maneje correctamente
       provider.setCustomParameters({ prompt: 'select_account' });
       
-      // Intentamos con Redirect ya que el error 404 en handler.js suele ser por bloqueos de popup o COOP
-      await signInWithRedirect(auth, provider);
+      // Intentamos con Popup primero, ya que Redirect puede causar el error 404 si no está configurado el dominio de auth
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        const user = result.user;
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            name: user.displayName,
+            email: user.email,
+            lastLogin: Date.now(),
+            uid: user.uid,
+          },
+          { merge: true },
+        );
+
+        localStorage.setItem(
+          "fp_session",
+          JSON.stringify({
+            email: user.email,
+            name: user.displayName,
+            uid: user.uid,
+          }),
+        );
+
+        router.push("/hub");
+      }
     } catch (error: any) {
       console.error(error);
-      showToast("Error con Google: " + error.message);
+      if (error.code === 'auth/popup-blocked') {
+        showToast("El navegador bloqueó la ventana. Por favor habilítala.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // Ignorar si el usuario canceló
+      } else {
+        showToast("Error con Google: " + error.message);
+      }
     }
   };
 

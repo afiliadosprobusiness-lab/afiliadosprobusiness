@@ -95,10 +95,46 @@ export default function BuilderPage() {
   const [saving, setSaving] = useState(false);
 
   const [isClient, setIsClient] = useState(false);
+  const [primaryColor, setPrimaryColor] = useState("#fbbf24");
+  const [secondaryColor, setSecondaryColor] = useState("#d97706");
+
+  const themes = [
+    { name: "Gold", primary: "#fbbf24", secondary: "#d97706" },
+    { name: "Cyan", primary: "#06b6d4", secondary: "#0891b2" },
+    { name: "Purple", primary: "#8b5cf6", secondary: "#7c3aed" },
+    { name: "Pink", primary: "#ec4899", secondary: "#db2777" },
+    { name: "Emerald", primary: "#10b981", secondary: "#059669" },
+    { name: "Orange", primary: "#f97316", secondary: "#ea580c" },
+    { name: "Blue", primary: "#3b82f6", secondary: "#2563eb" },
+    { name: "Red", primary: "#ef4444", secondary: "#dc2626" },
+  ];
 
   useEffect(() => {
     setIsClient(true);
+    const savedColor = localStorage.getItem("fastpage_builder_primary_color");
+    if (savedColor) setPrimaryColor(savedColor);
+    const savedSecondary = localStorage.getItem("fastpage_builder_secondary_color");
+    if (savedSecondary) setSecondaryColor(savedSecondary);
   }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem("fastpage_builder_primary_color", primaryColor);
+      localStorage.setItem("fastpage_builder_secondary_color", secondaryColor);
+    }
+  }, [primaryColor, secondaryColor, isClient]);
+
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? 
+      `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+      "251, 191, 36";
+  };
+
+  const updateTheme = (primary: string, secondary?: string) => {
+    setPrimaryColor(primary);
+    setSecondaryColor(secondary || primary);
+  };
 
   // Load from local storage
   useEffect(() => {
@@ -157,6 +193,10 @@ export default function BuilderPage() {
     if (confirm("¿Estás seguro de que quieres limpiar todo el constructor?")) {
       setBlocks([]);
       localStorage.removeItem("fastpage_builder_draft");
+      localStorage.removeItem("fastpage_builder_primary_color");
+      localStorage.removeItem("fastpage_builder_secondary_color");
+      setPrimaryColor("#fbbf24");
+      setSecondaryColor("#d97706");
     }
   };
 
@@ -184,11 +224,16 @@ export default function BuilderPage() {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: ${primaryColor};
+      --primary-rgb: ${hexToRgb(primaryColor)};
+      --secondary: ${secondaryColor};
+    }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #030712; color: #f9fafb; }
-    .text-gradient { background: linear-gradient(to right, #fbbf24, #f59e0b, #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .text-gradient { background: linear-gradient(to right, var(--primary), var(--secondary), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .bg-glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .btn-gold { background: linear-gradient(to bottom, #fbbf24, #d97706); color: #000; font-weight: 800; border-radius: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3); }
-    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(251, 191, 36, 0.5); }
+    .btn-primary { background: linear-gradient(to bottom, var(--primary), var(--secondary)); color: #000; font-weight: 800; border-radius: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.3); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(var(--primary-rgb), 0.5); }
     section { position: relative; overflow: hidden; }
   </style>
 </head>
@@ -251,18 +296,45 @@ export default function BuilderPage() {
                 <BlockButton icon={<ImageIcon />} label="Pie de Página" onClick={() => addBlock("footer")} />
               </>
             ) : (
-              <div className="p-4 text-center space-y-4">
-                <div className="space-y-2 text-left">
-                  <label className="text-[10px] uppercase font-bold text-zinc-500">Color Primario</label>
-                  <div className="flex gap-2">
-                    {["#fbbf24", "#06b6d4", "#8b5cf6", "#ec4899"].map(c => (
-                      <div key={c} className="w-8 h-8 rounded-full border border-white/10 cursor-pointer hover:scale-110 transition-transform" style={{backgroundColor: c}} />
+              <div className="p-4 space-y-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Paleta de Temas</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {themes.map(t => (
+                      <button 
+                        key={t.name} 
+                        onClick={() => updateTheme(t.primary, t.secondary)}
+                        className={`group relative w-full aspect-square rounded-xl border transition-all overflow-hidden ${primaryColor === t.primary ? "border-white scale-110 z-10 shadow-lg shadow-black/50" : "border-white/10 hover:border-white/30"}`}
+                        title={t.name}
+                      >
+                        <div className="absolute inset-0 flex flex-col">
+                          <div className="flex-1" style={{backgroundColor: t.primary}} />
+                          <div className="flex-1" style={{backgroundColor: t.secondary}} />
+                        </div>
+                      </button>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-2 text-left">
-                  <label className="text-[10px] uppercase font-bold text-zinc-500">Tipografía</label>
-                  <select className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500/50">
+
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Personalizado (RGB)</label>
+                  <div className="flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-white/10">
+                    <input 
+                      type="color" 
+                      value={primaryColor}
+                      onChange={(e) => updateTheme(e.target.value)}
+                      className="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-none"
+                    />
+                    <div className="flex-grow">
+                      <p className="text-[10px] font-bold text-white uppercase">{primaryColor}</p>
+                      <p className="text-[8px] text-zinc-500">Color Primario</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Tipografía</label>
+                  <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500/50 transition-colors">
                     <option>Plus Jakarta Sans</option>
                     <option>Inter</option>
                     <option>Montserrat</option>
@@ -322,7 +394,25 @@ export default function BuilderPage() {
           <div 
             className={`transition-all duration-500 ease-in-out bg-black rounded-[2rem] border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ${viewMode === "mobile" ? "max-w-[375px] h-[667px]" : "w-full max-w-5xl min-h-[80vh]"}`}
           >
-            <div id="builder-preview-content" className="flex-grow overflow-y-auto no-scrollbar scroll-smooth bg-[#030712]">
+          <div id="builder-preview-content" className="flex-grow overflow-y-auto no-scrollbar scroll-smooth bg-[#030712]">
+            <style>{`
+              :root {
+                --primary: ${primaryColor};
+                --primary-rgb: ${hexToRgb(primaryColor)};
+                --secondary: ${secondaryColor};
+              }
+              .dynamic-primary-text { color: var(--primary); }
+              .dynamic-primary-bg { background-color: var(--primary); }
+              .dynamic-primary-border { border-color: var(--primary); }
+              .dynamic-primary-bg-light { background-color: rgba(var(--primary-rgb), 0.1); }
+              .dynamic-primary-border-light { border-color: rgba(var(--primary-rgb), 0.2); }
+              .dynamic-primary-shadow { shadow: 0 0 30px rgba(var(--primary-rgb), 0.3); }
+              .dynamic-gradient-text { 
+                background: linear-gradient(to right, var(--primary), #ffffff, var(--secondary));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              }
+            `}</style>
               {blocks.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center p-12 text-center">
                   <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center mb-6 animate-bounce">
@@ -410,7 +500,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                   contentEditable 
                   suppressContentEditableWarning
                   onBlur={(e) => handleChange("badge", e.currentTarget.textContent || "")}
-                  className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest mb-8 outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  className="inline-block px-4 py-1.5 rounded-full dynamic-primary-bg-light border dynamic-primary-border-light dynamic-primary-text text-[10px] font-black uppercase tracking-widest mb-8 outline-none hover:outline-dashed hover:outline-cyan-500/50"
                 >
                   {block.content.badge}
                 </span>
@@ -418,7 +508,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                   contentEditable 
                   suppressContentEditableWarning
                   onBlur={(e) => handleChange("title", e.currentTarget.textContent || "")}
-                  className="text-4xl md:text-6xl font-black tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-white to-amber-200 leading-tight outline-none hover:outline-dashed hover:outline-cyan-500/50"
+                  className="text-4xl md:text-6xl font-black tracking-tight mb-8 dynamic-gradient-text leading-tight outline-none hover:outline-dashed hover:outline-cyan-500/50"
                 >
                   {block.content.title}
                 </h1>
@@ -435,7 +525,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                     contentEditable 
                     suppressContentEditableWarning
                     onBlur={(e) => handleChange("primaryBtn", e.currentTarget.textContent || "")}
-                    className="px-8 py-4 bg-amber-500 text-black font-black rounded-2xl hover:bg-amber-400 transition-all hover:scale-105 shadow-[0_0_30px_rgba(251,191,36,0.3)] outline-none"
+                    className="px-8 py-4 dynamic-primary-bg text-black font-black rounded-2xl hover:brightness-110 transition-all hover:scale-105 shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] outline-none"
                   >
                     {block.content.primaryBtn}
                   </button>
@@ -523,7 +613,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
             <div className="grid md:grid-cols-2 gap-8">
               {block.content.items.map((item: any, i: number) => (
                 <div key={i} className="p-8 rounded-3xl bg-white/5 border border-white/5 relative">
-                  <div className="absolute top-8 right-8 text-amber-500/20"><Star className="w-12 h-12 fill-current" /></div>
+                  <div className="absolute top-8 right-8 dynamic-primary-text opacity-20"><Star className="w-12 h-12 fill-current" /></div>
                   <p 
                     contentEditable 
                     suppressContentEditableWarning
@@ -537,7 +627,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                       <img 
                         src={item.avatar} 
                         alt={item.name} 
-                        className="w-12 h-12 rounded-full border border-amber-500/20 cursor-pointer hover:opacity-80 transition-opacity" 
+                        className="w-12 h-12 rounded-full border dynamic-primary-border-light cursor-pointer hover:opacity-80 transition-opacity" 
                         onClick={() => handleListItemImageUpload("items", i, "avatar")}
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 pointer-events-none">
@@ -584,8 +674,8 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               {block.content.plans.map((plan: any, i: number) => (
-                <div key={i} className={`p-8 rounded-[2.5rem] border ${plan.popular ? "bg-amber-500/10 border-amber-500/50 shadow-[0_0_50px_rgba(251,191,36,0.1)]" : "bg-zinc-900/50 border-white/5"} flex flex-col`}>
-                  {plan.popular && <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-6 block text-center">Más Popular</span>}
+                <div key={i} className={`p-8 rounded-[2.5rem] border ${plan.popular ? "dynamic-primary-bg-light dynamic-primary-border shadow-[0_0_50px_rgba(var(--primary-rgb),0.1)]" : "bg-zinc-900/50 border-white/5"} flex flex-col`}>
+                  {plan.popular && <span className="text-[10px] font-black uppercase tracking-widest dynamic-primary-text mb-6 block text-center">Más Popular</span>}
                   <h3 
                     contentEditable 
                     suppressContentEditableWarning
@@ -609,7 +699,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                   <ul className="space-y-4 mb-10 flex-grow">
                     {plan.features.map((f: string, fi: number) => (
                       <li key={fi} className="flex items-center gap-3 text-sm text-zinc-400">
-                        <Check className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <Check className="w-4 h-4 dynamic-primary-text flex-shrink-0" />
                         <span 
                           contentEditable 
                           suppressContentEditableWarning
@@ -625,7 +715,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                       </li>
                     ))}
                   </ul>
-                  <button className={`w-full py-4 rounded-2xl font-black uppercase tracking-wider transition-all ${plan.popular ? "bg-amber-500 text-black hover:bg-amber-400" : "bg-white/5 text-white hover:bg-white/10"}`}>
+                  <button className={`w-full py-4 rounded-2xl font-black uppercase tracking-wider transition-all ${plan.popular ? "dynamic-primary-bg text-black hover:brightness-110" : "bg-white/5 text-white hover:bg-white/10"}`}>
                     Elegir Plan
                   </button>
                 </div>
@@ -638,7 +728,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
     case "cta":
       return (
         <section className="py-24 px-6">
-          <div className="max-w-5xl mx-auto p-12 md:p-20 rounded-[3rem] bg-gradient-to-br from-amber-500 to-amber-700 text-black text-center relative overflow-hidden">
+          <div className="max-w-5xl mx-auto p-12 md:p-20 rounded-[3rem] dynamic-primary-bg text-black text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
             <div className="relative z-10">
               <h2 
@@ -691,7 +781,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
                     onBlur={(e) => handleListItemChange("items", i, "q", e.currentTarget.textContent || "")}
                     className="text-xl font-bold mb-4 flex items-center gap-3 outline-none hover:outline-dashed hover:outline-cyan-500/50"
                   >
-                    <span className="text-amber-500">Q.</span> {item.q}
+                    <span className="dynamic-primary-text">Q.</span> {item.q}
                   </h4>
                   <p 
                     contentEditable 
@@ -712,7 +802,7 @@ function EditableBlock({ block, onUpdate }: { block: Block, onUpdate: (content: 
       return (
         <footer className="py-12 px-6 border-t border-white/5 text-center">
           <div className="flex flex-col items-center gap-6">
-            <Zap className="w-8 h-8 text-amber-500" />
+            <Zap className="w-8 h-8 dynamic-primary-text" />
             <p 
               contentEditable 
               suppressContentEditableWarning
