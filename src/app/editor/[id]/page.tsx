@@ -173,6 +173,28 @@ export default function EditorPage() {
     }
   };
 
+  const updatePageBackgroundColor = () => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentDocument) return;
+    const color = prompt("Color de fondo de la pagina (ej: #111111, white):", iframe.contentDocument.body.style.backgroundColor || "");
+    if (!color) return;
+    iframe.contentDocument.body.style.backgroundColor = color;
+    markAsDirty();
+  };
+
+  const updatePageBackgroundImage = () => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentDocument) return;
+    const current = iframe.contentDocument.body.style.backgroundImage?.replace(/^url\(["']?/, "").replace(/["']?\)$/, "") || "";
+    const imageUrl = prompt("URL de imagen de fondo para la pagina:", current);
+    if (!imageUrl) return;
+    iframe.contentDocument.body.style.backgroundImage = `url("${imageUrl}")`;
+    iframe.contentDocument.body.style.backgroundSize = "cover";
+    iframe.contentDocument.body.style.backgroundPosition = "center";
+    iframe.contentDocument.body.style.backgroundRepeat = "no-repeat";
+    markAsDirty();
+  };
+
   // Auto-save logic
   useEffect(() => {
     if (!isDirty) return;
@@ -374,6 +396,20 @@ export default function EditorPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={updatePageBackgroundColor}
+            className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-zinc-200 hover:bg-white/10 transition-all"
+            title="Fondo de pagina"
+          >
+            Fondo
+          </button>
+          <button
+            onClick={updatePageBackgroundImage}
+            className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-zinc-200 hover:bg-white/10 transition-all"
+            title="Imagen de fondo de pagina"
+          >
+            Fondo Img
+          </button>
           <div className="flex items-center gap-2 mr-4">
             {isDirty && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
             <span className="text-xs text-zinc-500 font-medium">
