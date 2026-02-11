@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { TemplateGenerator } from "@/lib/templateGenerator";
 import {
   Utensils,
   Cpu,
@@ -45,12 +49,16 @@ import {
   Sparkles,
   School,
   Monitor,
+  Loader2,
 } from "lucide-react";
 
 export default function ClonerPage() {
   const { user, loading } = useAuth(true);
   const { t } = useLanguage();
+  const router = useRouter();
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
+  const [templateError, setTemplateError] = useState<string | null>(null);
 
   const models = [
     {
@@ -380,6 +388,56 @@ export default function ClonerPage() {
 
   const handleBack = () => {
     setSelectedModel(null);
+    setTemplateError(null);
+  };
+
+  const handleCreateTemplate = async (sub: { id: string; title: string }) => {
+    if (loading) return;
+    if (!user?.uid) {
+      setTemplateError("Debes iniciar sesion para crear una plantilla editable.");
+      return;
+    }
+    if (!selectedModel) {
+      setTemplateError("Selecciona primero un modelo de negocio.");
+      return;
+    }
+
+    const createKey = `${selectedModel}:${sub.id}`;
+    setCreatingTemplate(createKey);
+    setTemplateError(null);
+    try {
+      const siteId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID().slice(0, 8)
+          : Math.random().toString(36).slice(2, 10);
+
+      const html = TemplateGenerator.generate({
+        category: selectedModel,
+        specialty: sub.id,
+        businessName: sub.title,
+      });
+
+      await setDoc(doc(db, "cloned_sites", siteId), {
+        id: siteId,
+        html,
+        userId: user.uid,
+        category: selectedModel,
+        specialty: sub.id,
+        templateName: sub.title,
+        source: "template-model",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        published: false,
+        status: "draft",
+      });
+
+      router.push(`/editor/${siteId}`);
+    } catch (error: any) {
+      console.error("Error creating template project:", error);
+      setTemplateError("No se pudo crear la plantilla. Verifica permisos de Firestore e intenta otra vez.");
+    } finally {
+      setCreatingTemplate(null);
+    }
   };
 
   const currentSubcategories = selectedModel
@@ -488,6 +546,7 @@ export default function ClonerPage() {
                 {currentSubcategories.map((sub) => (
                   <div
                     key={sub.id}
+                    onClick={() => handleCreateTemplate(sub)}
                     className="
                       group relative p-6 rounded-[1.5rem] border border-white/5 
                       bg-zinc-900/30 backdrop-blur-sm cursor-pointer 
@@ -511,9 +570,35 @@ export default function ClonerPage() {
                         {sub.emoji}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      className="mt-5 w-full py-2.5 rounded-full border border-white/10 bg-white/5 group-hover:bg-gold-500 group-hover:text-black group-hover:border-gold-500 transition-all duration-300 font-bold text-sm flex items-center justify-center gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreateTemplate(sub);
+                      }}
+                      disabled={creatingTemplate === `${selectedModel}:${sub.id}`}
+                    >
+                      {creatingTemplate === `${selectedModel}:${sub.id}` ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Creando plantilla...
+                        </>
+                      ) : (
+                        <>
+                          Crear y Editar
+                          <ArrowRight className="w-3 h-3" />
+                        </>
+                      )}
+                    </button>
                   </div>
                 ))}
               </div>
+              {templateError && (
+                <div className="mt-6 rounded-2xl border border-red-500/25 bg-red-500/10 text-red-300 px-4 py-3 text-sm font-semibold">
+                  {templateError}
+                </div>
+              )}
             </div>
           )}
         </div>
