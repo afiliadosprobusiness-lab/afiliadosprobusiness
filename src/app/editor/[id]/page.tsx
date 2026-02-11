@@ -7,6 +7,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/firebase";
+import { doc as firestoreDoc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 export default function EditorPage() {
   const { user: session, loading: authLoading } = useAuth(true);
@@ -186,10 +188,11 @@ export default function EditorPage() {
   useEffect(() => {
     const fetchSite = async () => {
       try {
-        const res = await fetch(`/api/sites/${id}`);
-        if (!res.ok) throw new Error("Site not found");
-        const text = await res.text();
-        setHtml(text);
+        const snap = await getDoc(firestoreDoc(db, "cloned_sites", id));
+        if (!snap.exists()) throw new Error("Site not found");
+        const data = snap.data() as { html?: string };
+        if (!data.html) throw new Error("Site HTML not found");
+        setHtml(data.html);
       } catch (error) {
         console.error("Error loading site:", error);
       } finally {
@@ -231,22 +234,16 @@ export default function EditorPage() {
 
       const updatedHtml = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
 
-      const res = await fetch(`/api/sites/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html: updatedHtml }),
+      await updateDoc(firestoreDoc(db, "cloned_sites", id), {
+        html: updatedHtml,
+        updatedAt: Date.now()
       });
 
-      if (res.ok) {
-        setHtml(updatedHtml);
-        setShowSaved(true);
-        setTimeout(() => setShowSaved(false), 3000);
-        setIsDirty(false);
-        return updatedHtml;
-      } else {
-        const data = await res.json();
-        throw new Error(data.error || "Error al guardar");
-      }
+      setHtml(updatedHtml);
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 3000);
+      setIsDirty(false);
+      return updatedHtml;
     } catch (error: any) {
       console.error("Error saving site:", error);
       setError("Error al guardar: " + error.message);
@@ -268,25 +265,21 @@ export default function EditorPage() {
         return;
       }
 
-      // 2. Llamamos a la nueva API de publicación que optimiza y valida
-      const res = await fetch("/api/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteId: id, html: cleanHtml }),
+      // 2. Publicar directamente en Firestore usando la sesión del usuario
+      await setDoc(firestoreDoc(db, "cloned_sites", id), {
+        html: cleanHtml,
+        published: true,
+        status: "published",
+        publishedAt: Date.now(),
+        updatedAt: Date.now()
+      }, { merge: true });
+
+      setPublishResult({
+        success: true,
+        issues: [],
+        url: `/api/sites/${id}`
       });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setPublishResult({
-          success: true,
-          issues: data.validationIssues || [],
-          url: data.publishedUrl
-        });
-        setShowPublished(true);
-      } else {
-        throw new Error(data.error || "Error en el proceso de publicación");
-      }
+      setShowPublished(true);
     } catch (error: any) {
       console.error("Error publishing site:", error);
       setError("Error al publicar: " + error.message);

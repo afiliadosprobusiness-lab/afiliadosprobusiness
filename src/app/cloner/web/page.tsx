@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap } from "lucide-react";
 
 function isValidUrl(url: string) {
@@ -55,22 +57,29 @@ export default function WebClonerPage() {
     
     setSavingToEditor(true);
     try {
-      const res = await fetch("/api/sites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html, url }),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "No se pudo iniciar la sesión del editor.");
+      if (!user?.uid) {
+        throw new Error("Debes iniciar sesión para guardar y editar.");
       }
-      
-      const { siteId } = data;
+
+      const siteId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID().slice(0, 8)
+          : Math.random().toString(36).slice(2, 10);
+
+      await setDoc(doc(db, "cloned_sites", siteId), {
+        id: siteId,
+        html,
+        url,
+        userId: user.uid,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        published: false,
+        status: "draft"
+      });
+
       window.open(`/editor/${siteId}`, "_blank");
     } catch (e: any) {
-      setError(e.message || "Error al abrir el editor. Intenta nuevamente.");
+      setError(e.message || "No se pudo guardar el proyecto. Verifica tu sesión y permisos.");
     } finally {
       setSavingToEditor(false);
     }
