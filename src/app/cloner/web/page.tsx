@@ -66,7 +66,7 @@ export default function WebClonerPage() {
           ? crypto.randomUUID().slice(0, 8)
           : Math.random().toString(36).slice(2, 10);
 
-      await setDoc(doc(db, "cloned_sites", siteId), {
+      const sitePayload = {
         id: siteId,
         html,
         url,
@@ -75,7 +75,25 @@ export default function WebClonerPage() {
         updatedAt: Date.now(),
         published: false,
         status: "draft"
-      });
+      };
+
+      try {
+        await setDoc(doc(db, "cloned_sites", siteId), sitePayload);
+      } catch (firestoreError: any) {
+        const msg = String(firestoreError?.message || "").toLowerCase();
+        const code = String(firestoreError?.code || "").toLowerCase();
+        const permissionDenied =
+          msg.includes("missing or insufficient permissions") ||
+          msg.includes("permission-denied") ||
+          code.includes("permission-denied");
+
+        if (!permissionDenied) {
+          throw firestoreError;
+        }
+
+        // Fallback local para seguir editando aunque Firestore esté restringido.
+        localStorage.setItem(`fastpage_draft_${siteId}`, JSON.stringify(sitePayload));
+      }
 
       window.open(`/editor/${siteId}`, "_blank");
     } catch (e: any) {

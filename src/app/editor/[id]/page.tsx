@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { doc as firestoreDoc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc as firestoreDoc, getDoc, setDoc } from "firebase/firestore";
 
 export default function EditorPage() {
   const { user: session, loading: authLoading } = useAuth(true);
@@ -38,7 +38,59 @@ export default function EditorPage() {
   const [publishResult, setPublishResult] = useState<{ success: boolean; issues: string[]; url?: string } | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadedFromLocalDraft, setLoadedFromLocalDraft] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const isPermissionDeniedError = (err: any) => {
+    const msg = String(err?.message || "").toLowerCase();
+    const code = String(err?.code || "").toLowerCase();
+    return (
+      msg.includes("missing or insufficient permissions") ||
+      msg.includes("permission-denied") ||
+      code.includes("permission-denied")
+    );
+  };
+
+  const getLocalDraftKey = () => `fastpage_draft_${id}`;
+
+  const loadLocalDraft = () => {
+    try {
+      const raw = localStorage.getItem(getLocalDraftKey());
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as { html?: string };
+      if (!parsed?.html) return false;
+      setHtml(parsed.html);
+      setLoadedFromLocalDraft(true);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const saveLocalDraft = (updatedHtml: string) => {
+    const key = getLocalDraftKey();
+    const now = Date.now();
+    let previous: Record<string, any> = {};
+    try {
+      previous = JSON.parse(localStorage.getItem(key) || "{}");
+    } catch {
+      previous = {};
+    }
+
+    const nextDraft = {
+      id,
+      html: updatedHtml,
+      url: previous.url || "",
+      userId: session?.uid || previous.userId || "",
+      createdAt: previous.createdAt || now,
+      updatedAt: now,
+      published: previous.published || false,
+      status: previous.status || "draft"
+    };
+
+    localStorage.setItem(key, JSON.stringify(nextDraft));
+    setLoadedFromLocalDraft(true);
+  };
 
   // Inyectar script de edición en el iframe
   const injectEditorScript = () => {
@@ -189,12 +241,25 @@ export default function EditorPage() {
     const fetchSite = async () => {
       try {
         const snap = await getDoc(firestoreDoc(db, "cloned_sites", id));
-        if (!snap.exists()) throw new Error("Site not found");
+        if (!snap.exists()) {
+          if (!loadLocalDraft()) {
+            throw new Error("Site not found");
+          }
+          return;
+        }
         const data = snap.data() as { html?: string };
-        if (!data.html) throw new Error("Site HTML not found");
+        if (!data.html) {
+          if (!loadLocalDraft()) {
+            throw new Error("Site HTML not found");
+          }
+          return;
+        }
         setHtml(data.html);
       } catch (error) {
         console.error("Error loading site:", error);
+        if (!loadLocalDraft()) {
+          setError("No se pudo cargar el proyecto desde Firestore o borrador local.");
+        }
       } finally {
         setLoading(false);
       }
@@ -233,11 +298,23 @@ export default function EditorPage() {
       doc.querySelectorAll("script[id^='editor-']").forEach(s => s.remove());
 
       const updatedHtml = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
-
-      await updateDoc(firestoreDoc(db, "cloned_sites", id), {
+      const savePayload: Record<string, any> = {
+        id,
         html: updatedHtml,
         updatedAt: Date.now()
-      });
+      };
+      if (session?.uid) {
+        savePayload.userId = session.uid;
+      }
+
+      try {
+        await setDoc(firestoreDoc(db, "cloned_sites", id), savePayload, { merge: true });
+      } catch (firestoreError: any) {
+        if (!isPermissionDeniedError(firestoreError)) {
+          throw firestoreError;
+        }
+        saveLocalDraft(updatedHtml);
+      }
 
       setHtml(updatedHtml);
       setShowSaved(true);
@@ -266,18 +343,31 @@ export default function EditorPage() {
       }
 
       // 2. Publicar directamente en Firestore usando la sesión del usuario
-      await setDoc(firestoreDoc(db, "cloned_sites", id), {
+      const publishPayload: Record<string, any> = {
+        id,
         html: cleanHtml,
         published: true,
         status: "published",
         publishedAt: Date.now(),
         updatedAt: Date.now()
-      }, { merge: true });
+      };
+      if (session?.uid) {
+        publishPayload.userId = session.uid;
+      }
+
+      try {
+        await setDoc(firestoreDoc(db, "cloned_sites", id), publishPayload, { merge: true });
+      } catch (firestoreError: any) {
+        if (!isPermissionDeniedError(firestoreError)) {
+          throw firestoreError;
+        }
+        saveLocalDraft(cleanHtml);
+      }
 
       setPublishResult({
         success: true,
         issues: [],
-        url: `/api/sites/${id}`
+        url: loadedFromLocalDraft ? `/editor/${id}` : `/api/sites/${id}`
       });
       setShowPublished(true);
     } catch (error: any) {
