@@ -50,18 +50,9 @@ function AuthContent() {
   }, [searchParams]);
 
   const showToast = (message: string) => {
-    console.log("Toast message:", message);
     setToast(message);
-    setTimeout(() => setToast(""), 5000); // Aumentado a 5s para mejor lectura
+    setTimeout(() => setToast(""), 3000);
   };
-
-  // Validación de configuración al cargar
-  useEffect(() => {
-    const apiKey = auth.app.options.apiKey;
-    if (!apiKey || apiKey === "dummy-key" || apiKey === "dummy-key-build") {
-      showToast("⚠️ Sistema en modo mantenimiento: Falta configurar API Key de Firebase.");
-    }
-  }, []);
 
   // Función centralizada para sincronizar usuario con Firestore
   const syncUserToFirestore = async (user: any) => {
@@ -142,25 +133,16 @@ function AuthContent() {
       const target = email === "afiliadosprobusiness@gmail.com" ? "/admin" : "/hub";
       setTimeout(() => router.push(target), 1000);
     } catch (error: any) {
-      console.error("Registration Error Detail:", {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-
-      const errorMessages: Record<string, string> = {
-        "auth/email-already-in-use": "El email ya está registrado. Intenta iniciar sesión. 📧",
-        "auth/weak-password": "La contraseña es muy débil. Usa al menos 6 caracteres. 🔒",
-        "auth/invalid-email": "El formato del correo electrónico no es válido. 📩",
-        "auth/operation-not-allowed": "El registro con email/contraseña no está habilitado en Firebase. 🚫",
-        "auth/api-key-not-valid": "Error crítico: La API Key de Firebase no es válida o falta. Contacta al soporte. 🔑",
-        "auth/invalid-api-key": "Error crítico: La API Key de Firebase es inválida. 🔑",
-        "auth/network-request-failed": "Error de conexión. Revisa tu internet. 🌐",
-        "auth/internal-error": "Error interno de Firebase. Intenta de nuevo más tarde. ⚙️"
-      };
-
-      const message = errorMessages[error.code] || `Error inesperado (${error.code}): ${error.message}`;
-      showToast(message);
+      console.error(error);
+      if (error.code === "auth/email-already-in-use") {
+        showToast("El email ya está registrado");
+      } else if (error.code === "auth/weak-password") {
+        showToast("La contraseña es muy débil (mínimo 6 caracteres)");
+      } else if (error.code === "auth/configuration-not-found") {
+        showToast("Error de configuración: Habilita Authentication en Firebase Console");
+      } else {
+        showToast("Error: " + error.message);
+      }
     }
   };
 
@@ -194,10 +176,7 @@ function AuthContent() {
         router.push("/hub");
       }
     } catch (error: any) {
-      console.error("Login Error Detail:", {
-        code: error.code,
-        message: error.message
-      });
+      console.error(error);
 
       // Detectar si el usuario debe usar Google
       try {
@@ -212,18 +191,15 @@ function AuthContent() {
         // Ignorar error de fetchSignInMethods (puede fallar por políticas de privacidad)
       }
 
-      const errorMessages: Record<string, string> = {
-        "auth/user-not-found": "No existe una cuenta con este email. ❌",
-        "auth/wrong-password": "Contraseña incorrecta. 🔑",
-        "auth/invalid-credential": "Credenciales inválidas o expiradas. 🚫",
-        "auth/user-disabled": "Esta cuenta ha sido desactivada. ⚠️",
-        "auth/too-many-requests": "Demasiados intentos. Intenta más tarde. ⏳",
-        "auth/api-key-not-valid": "Error crítico: La API Key de Firebase no es válida. 🔑",
-        "auth/invalid-api-key": "Error crítico: La API Key de Firebase es inválida. 🔑"
-      };
-
-      const message = errorMessages[error.code] || `Error al iniciar sesión: ${error.message} ⚠️`;
-      showToast(message);
+      if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        showToast("Credenciales inválidas. Si usaste Google, usa el botón de abajo. ❌");
+      } else {
+        showToast("Error al iniciar sesión: " + error.message + " ⚠️");
+      }
     }
   };
 
@@ -266,12 +242,6 @@ function AuthContent() {
 
   const handleGoogleLogin = async () => {
     try {
-      // Validación previa de configuración
-      if (!auth.app.options.apiKey || auth.app.options.apiKey === "dummy-key") {
-        showToast("⚠️ No se puede iniciar sesión con Google: API Key no configurada.");
-        return;
-      }
-
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       
@@ -286,21 +256,15 @@ function AuthContent() {
         window.location.href = target;
       }
     } catch (error: any) {
-      console.error("Google Login Error Detail:", {
-        code: error.code,
-        message: error.message
-      });
+      console.error("Google Login Error:", error);
       
-      const errorMessages: Record<string, string> = {
-        'auth/popup-blocked': "El navegador bloqueó la ventana emergente. Por favor, habilítala. 🛡️",
-        'auth/popup-closed-by-user': "Inicio de sesión cancelado por el usuario. 👤",
-        'auth/cancelled-popup-request': "Solicitud cancelada. Intenta de nuevo. 🔄",
-        'auth/unauthorized-domain': "Este dominio no está autorizado en la consola de Firebase. 🌐",
-        'auth/api-key-not-valid': "Error crítico: La API Key de Firebase no es válida. 🔑",
-        'auth/invalid-api-key': "Error crítico: La API Key de Firebase es inválida. 🔑"
-      };
-
-      if (error.message?.includes('Cross-Origin-Opener-Policy')) {
+      if (error.code === 'auth/popup-blocked') {
+        showToast("El navegador bloqueó la ventana emergente. Por favor, habilítala.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // Ignorar
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        showToast("Inicio de sesión cancelado.");
+      } else if (error.message?.includes('Cross-Origin-Opener-Policy')) {
         console.log("Detectado error COOP, intentando redirección...");
         try {
           const provider = new GoogleAuthProvider();
@@ -308,20 +272,14 @@ function AuthContent() {
         } catch (redirectError: any) {
           showToast("Error de seguridad del navegador. Intenta de nuevo.");
         }
-        return;
-      }
-
-      const message = errorMessages[error.code] || `Error con Google: ${error.message}`;
-      showToast(message);
-
-      // Fallback a redirección para errores persistentes de popup
-      if (['auth/popup-blocked', 'auth/popup-closed-by-user'].includes(error.code)) return;
-
-      try {
-        const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
-      } catch (redirectError: any) {
-        console.error("Redirect Fallback Error:", redirectError);
+      } else {
+        // Fallback general para otros errores
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError: any) {
+          showToast("Error al iniciar sesión: " + (error.message || "Error desconocido"));
+        }
       }
     }
   };
