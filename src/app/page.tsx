@@ -196,10 +196,38 @@ export default function HomePage() {
   ];
 
   const useCases = [
-    { title: "Restaurantes", desc: "Menus, reservas y pedidos en una sola página." },
-    { title: "Servicios", desc: "Captura leads de alto valor con formularios claros." },
-    { title: "E-commerce", desc: "Lanza ofertas y catálogos con diseño orientado a venta." },
-    { title: "Consultoría", desc: "Refuerza autoridad con casos y CTA de contacto directo." },
+    {
+      title: "Restaurantes",
+      desc: "Menus, reservas y pedidos en una sola página.",
+      emoji: "🍕",
+      tag: "Alto ticket",
+      accent: "from-red-500/35 to-orange-500/30",
+      border: "hover:border-red-400/60",
+    },
+    {
+      title: "Servicios",
+      desc: "Captura leads de alto valor con formularios claros.",
+      emoji: "🛠️",
+      tag: "Lead inmediato",
+      accent: "from-cyan-500/30 to-blue-500/25",
+      border: "hover:border-cyan-400/60",
+    },
+    {
+      title: "E-commerce",
+      desc: "Lanza ofertas y catálogos con diseño orientado a venta.",
+      emoji: "🛍️",
+      tag: "Conversión rápida",
+      accent: "from-fuchsia-500/30 to-purple-500/25",
+      border: "hover:border-fuchsia-400/60",
+    },
+    {
+      title: "Consultoría",
+      desc: "Refuerza autoridad con casos y CTA de contacto directo.",
+      emoji: "📈",
+      tag: "Marca premium",
+      accent: "from-amber-500/35 to-yellow-500/25",
+      border: "hover:border-amber-400/60",
+    },
   ];
 
   const handleCtaClick = (location: string, type: "primary" | "secondary") => {
@@ -513,7 +541,22 @@ export default function HomePage() {
       {/* --- USE CASES SECTION --- */}
       <section className="relative z-10 px-4 pb-10 md:pb-16">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-6 text-center md:mb-8">
+          <div className="relative mb-6 text-center md:mb-8">
+            <div className="pointer-events-none absolute inset-x-0 -top-3 flex items-center justify-center gap-4 opacity-85">
+              {["🔥", "✨", "🚀", "💎"].map((emoji, idx) => (
+                <span
+                  key={emoji}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-lg shadow-[0_8px_20px_rgba(0,0,0,0.35)] animate-bounce"
+                  style={{
+                    animationDelay: `${idx * 0.25}s`,
+                    animationDuration: "3s",
+                  }}
+                  aria-hidden="true"
+                >
+                  {emoji}
+                </span>
+              ))}
+            </div>
             <h2 className="text-2xl font-extrabold text-white md:text-4xl">
               Casos de uso listos para vender
             </h2>
@@ -527,10 +570,38 @@ export default function HomePage() {
             {useCases.map((item) => (
               <div
                 key={item.title}
-                className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5 transition-all hover:border-amber-500/40"
+                className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60 p-5 transition-all duration-300 hover:-translate-y-1 ${item.border}`}
               >
-                <p className="text-lg font-black text-white">{item.title}</p>
-                <p className="mt-2 text-sm text-zinc-300">{item.desc}</p>
+                <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
+
+                <div className="relative z-10">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="inline-flex items-center gap-3">
+                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-2xl shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform duration-300 group-hover:scale-110">
+                        <span className="animate-pulse" style={{ animationDuration: "2.5s" }}>
+                          {item.emoji}
+                        </span>
+                      </div>
+                      <p className="text-lg font-black text-white">{item.title}</p>
+                    </div>
+                    <span className="rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-200">
+                      {item.tag}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-zinc-200">{item.desc}</p>
+
+                  <Link
+                    href="/templates"
+                    onClick={() => handleCtaClick(`use_case_${item.title.toLowerCase()}`, "secondary")}
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-amber-300 transition-colors hover:text-amber-200"
+                  >
+                    Ver plantilla ideal
+                    <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
+                      ↗
+                    </span>
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
