@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
@@ -603,7 +602,6 @@ export default function ClonerPage() {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

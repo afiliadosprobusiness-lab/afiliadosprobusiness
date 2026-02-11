@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -440,8 +439,6 @@ export default function BuilderPage() {
           </div>
         </main>
       </div>
-
-      <Footer />
     </div>
   );
 }

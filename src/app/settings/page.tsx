@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { auth, db } from "@/lib/firebase";
@@ -605,8 +604,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

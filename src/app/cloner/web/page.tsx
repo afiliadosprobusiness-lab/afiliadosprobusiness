@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
@@ -383,8 +382,6 @@ export default function WebClonerPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import Footer from "@/components/Footer";
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -218,9 +219,9 @@ export default function HomePage() {
       </div>
 
       {/* --- HERO SECTION --- */}
-      <section className="relative min-h-screen flex flex-col items-center px-4 overflow-hidden pt-6 pb-20 z-10">
-        <div className="flex-1 flex flex-col items-center justify-center md:justify-start md:pt-24 w-full z-10">
-          <div className="relative z-10 max-w-4xl w-full text-center flex flex-col items-center gap-6 md:gap-8">
+      <section className="relative min-h-[calc(100svh-4rem)] md:min-h-screen flex flex-col items-center px-4 overflow-hidden pt-20 md:pt-6 pb-12 md:pb-20 z-10">
+        <div className="w-full z-10 flex flex-col items-center md:flex-1 md:justify-start md:pt-24">
+          <div className="relative z-10 max-w-4xl w-full text-center flex flex-col items-center gap-5 md:gap-8">
             {/* Top Label */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-medium text-zinc-800 dark:text-white animate-fade-in border border-yellow-500/30 shadow-[0_0_15px_rgba(255,215,0,0.1)] mb-4 md:mb-0">
               <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse shadow-[0_0_10px_#FFD700]" />
@@ -260,7 +261,7 @@ export default function HomePage() {
 
             {/* CTA Buttons */}
             <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-8 md:mt-10 animate-slide-up w-full max-w-[320px] sm:max-w-none px-4 sm:px-0 mx-auto"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-6 md:mt-10 animate-slide-up w-full max-w-[320px] sm:max-w-none px-4 sm:px-0 mx-auto"
               style={{ animationDelay: "0.3s" }}
             >
               <Link
@@ -284,18 +285,18 @@ export default function HomePage() {
 
         {/* Tech Stack Strip (moved from footer to hero bottom) */}
         <div
-          className="w-full z-10 animate-fade-in mt-32 md:mt-0 pb-10"
+          className="w-full z-10 animate-fade-in mt-10 sm:mt-14 md:mt-auto pb-4 md:pb-10"
           style={{ animationDelay: "0.5s" }}
         >
           <p className="text-center text-sm mb-6 uppercase tracking-widest font-bold text-gold-gradient">
             {t("hero.payments")}
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 md:gap-16 opacity-70 hover:opacity-100 transition-all duration-500 px-4 group/payments">
-            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-orange-500 active:text-orange-500 hover:scale-110 transition-all duration-300 cursor-default">BCP</span>
-            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-blue-600 active:text-blue-600 hover:scale-110 transition-all duration-300 cursor-default">BBVA</span>
-            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-red-600 active:text-red-600 hover:scale-110 transition-all duration-300 cursor-default">Scotiabank</span>
-            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-purple-500 active:text-purple-500 hover:scale-110 transition-all duration-300 cursor-default">Yape</span>
-            <span className="text-lg sm:text-xl font-bold text-white/40 hover:text-cyan-400 active:text-cyan-400 hover:scale-110 transition-all duration-300 cursor-default">Plin</span>
+          <div className="mx-auto grid w-full max-w-xs grid-cols-2 gap-3 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center sm:items-center sm:gap-8 md:gap-16 opacity-80 hover:opacity-100 transition-all duration-500 px-4 group/payments">
+            <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-orange-500 active:text-orange-500 hover:scale-105 transition-all duration-300 cursor-default">BCP</span>
+            <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-blue-600 active:text-blue-600 hover:scale-105 transition-all duration-300 cursor-default">BBVA</span>
+            <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-red-600 active:text-red-600 hover:scale-105 transition-all duration-300 cursor-default">Scotiabank</span>
+            <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-purple-500 active:text-purple-500 hover:scale-105 transition-all duration-300 cursor-default">Yape</span>
+            <span className="col-span-2 sm:col-auto inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-cyan-400 active:text-cyan-400 hover:scale-105 transition-all duration-300 cursor-default">Plin</span>
           </div>
         </div>
       </section>
@@ -573,6 +574,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

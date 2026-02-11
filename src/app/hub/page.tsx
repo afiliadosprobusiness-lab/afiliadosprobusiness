@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -169,8 +168,6 @@ export default function HubPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

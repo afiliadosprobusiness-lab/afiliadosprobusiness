@@ -1,6 +1,5 @@
 import "./globals.css"
 import Nav from "@/components/Nav"
-import Footer from "@/components/Footer"
 import { ThemeProvider } from "@/providers/ThemeProvider"
 import { LanguageProvider } from "@/context/LanguageContext"
 import FloatingControls from "@/components/FloatingControls"
@@ -28,7 +27,6 @@ export default function RootLayout({
             <Nav />
             {children}
             <FloatingControls />
-            <Footer />
           </LanguageProvider>
         </ThemeProvider>
       </body>
