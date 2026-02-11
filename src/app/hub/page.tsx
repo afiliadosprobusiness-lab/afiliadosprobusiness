@@ -50,7 +50,7 @@ export default function HubPage() {
       description: t("hub.cloner.desc"),
       icon: <LayoutGrid className="w-8 h-8 text-cyan-400" />,
       action: t("hub.cloner.action"),
-      href: "/cloner",
+      href: "/templates",
       gradient: "from-zinc-900 to-zinc-900",
       border: "hover:border-cyan-500/50",
     },

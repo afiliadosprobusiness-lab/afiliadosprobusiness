@@ -40,7 +40,7 @@ export default function Nav() {
     return [
       { name: t("nav.hub"), href: "/hub", emoji: "" },
       { name: t("nav.builder"), href: "/builder", emoji: "" },
-      { name: t("nav.templates"), href: "/cloner", emoji: "" },
+      { name: t("nav.templates"), href: "/templates", emoji: "" },
       { name: t("nav.cloner"), href: "/cloner/web", emoji: "" },
       { name: t("nav.metrics"), href: "/metrics", emoji: "" },
       { name: t("nav.settings"), href: "/settings", emoji: "" },

@@ -22,7 +22,7 @@ export default function EditorPage() {
   const navLinks = [
     { name: t("nav.home"), href: "/" },
     { name: t("nav.builder"), href: "/builder" },
-    { name: t("nav.templates"), href: "/cloner" },
+    { name: t("nav.templates"), href: "/templates" },
     { name: t("nav.cloner"), href: "/cloner/web" },
     { name: t("nav.hub"), href: "/hub" },
   ];
