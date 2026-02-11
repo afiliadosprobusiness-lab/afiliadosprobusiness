@@ -12,15 +12,10 @@ if (!admin.apps.length) {
       });
       isInitialized = true;
       console.log("[FirebaseAdmin] Initialized with Service Account Key");
-    } else if (process.env.NODE_ENV === 'production') {
-      // En producción (Vercel/Google Cloud), intentamos usar las credenciales predeterminadas del entorno
-      admin.initializeApp({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "fastpage2-db56b",
-      });
-      isInitialized = true;
-      console.log("[FirebaseAdmin] Initialized with Default Application Credentials");
     } else {
-      console.warn("[FirebaseAdmin] No service account key found and not in production. Admin SDK will not be initialized.");
+      // Do not initialize Admin SDK without explicit credentials.
+      // This avoids runtime failures like "Could not load the default credentials".
+      console.warn("[FirebaseAdmin] No FIREBASE_SERVICE_ACCOUNT_KEY found. Admin SDK disabled.");
     }
   } catch (error) {
     console.error("[FirebaseAdmin] Initialization error:", error);

@@ -25,8 +25,8 @@ function sanitizeHtml(html: string, baseUrl: string): string {
   sanitized = sanitized.replace(/\s+integrity=["'].*?["']/gi, '');
   sanitized = sanitized.replace(/\s+crossorigin=["'].*?["']/gi, '');
 
-  // 5. Pre-fix relative URLs in HTML attributes (src, href, srcset, action)
-  const urlAttributes = ['src', 'href', 'srcset', 'action', 'data-src', 'data-href', 'poster'];
+  // 5. Pre-fix relative URLs in HTML attributes (except srcset, handled separately)
+  const urlAttributes = ['src', 'href', 'action', 'data-src', 'data-href', 'poster'];
   urlAttributes.forEach(attr => {
     // Excluir URLs que ya son absolutas, fragmentos, esquemas data:, o javascript:
     const regex = new RegExp(`(\\s${attr}=["'])(?!https?://|//|data:|#|javascript:|blob:)([^"']+)`, 'gi');
@@ -41,6 +41,38 @@ function sanitizeHtml(html: string, baseUrl: string): string {
         return match;
       }
     });
+  });
+
+  // 5.1 Fix srcset preserving descriptors (e.g. "640w", "2x")
+  sanitized = sanitized.replace(/(\ssrcset=["'])([^"']+)(["'])/gi, (match, prefix, value, suffix) => {
+    try {
+      const fixedSrcset = value
+        .split(",")
+        .map((candidate: string) => {
+          const parts = candidate.trim().split(/\s+/);
+          if (!parts[0]) return "";
+
+          const source = parts[0];
+          if (
+            source.startsWith("http://") ||
+            source.startsWith("https://") ||
+            source.startsWith("//") ||
+            source.startsWith("data:") ||
+            source.startsWith("blob:")
+          ) {
+            return parts.join(" ");
+          }
+
+          parts[0] = new URL(source, baseUrl).href;
+          return parts.join(" ");
+        })
+        .filter(Boolean)
+        .join(", ");
+
+      return `${prefix}${fixedSrcset}${suffix}`;
+    } catch {
+      return match;
+    }
   });
 
   // 6. Fix relative URLs in inline styles (background-image: url(...))
@@ -260,4 +292,3 @@ export async function GET(request: NextRequest) {
     });
   }
 }
-

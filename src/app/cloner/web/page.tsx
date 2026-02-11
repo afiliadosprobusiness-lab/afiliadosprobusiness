@@ -35,9 +35,12 @@ export default function WebClonerPage() {
       if (res.ok) {
         const data = await res.json();
         setPublishedSites(data);
+      } else {
+        setPublishedSites([]);
       }
     } catch (error) {
       console.error("Error fetching sites:", error);
+      setPublishedSites([]);
     } finally {
       setFetchingSites(false);
     }
@@ -61,13 +64,13 @@ export default function WebClonerPage() {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.details || data.error || "Failed to initialize editor session");
+        throw new Error(data.error || "No se pudo iniciar la sesión del editor.");
       }
       
       const { siteId } = data;
       window.open(`/editor/${siteId}`, "_blank");
     } catch (e: any) {
-      setError(e.message || "Error al abrir el editor");
+      setError(e.message || "Error al abrir el editor. Intenta nuevamente.");
     } finally {
       setSavingToEditor(false);
     }
@@ -335,4 +338,3 @@ export default function WebClonerPage() {
     </div>
   );
 }
-

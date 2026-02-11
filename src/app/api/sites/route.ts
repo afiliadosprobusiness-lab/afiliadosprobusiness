@@ -3,9 +3,15 @@ import { v4 as uuidv4 } from "uuid";
 import { sitesStorage } from "@/lib/sitesStorage";
 
 export async function GET() {
-  const allSites = await sitesStorage.getAll();
-  const sites = allSites.filter(s => s.published);
-  return NextResponse.json(sites);
+  try {
+    const allSites = await sitesStorage.getAll();
+    const sites = allSites.filter((s) => s.published);
+    return NextResponse.json(sites);
+  } catch (error) {
+    console.error("[Sites API GET] Error:", error);
+    // Keep Web Cloner functional even if listing fails.
+    return NextResponse.json([]);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -36,10 +42,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ siteId });
   } catch (error: any) {
-    console.error("Error saving site:", error);
+    console.error("[Sites API POST] Error saving site:", error);
     return NextResponse.json({ 
-      error: "Failed to save site", 
-      details: error.message 
+      error: "No se pudo guardar el proyecto. Verifica la configuración de Firebase y permisos."
     }, { status: 500 });
   }
 }
