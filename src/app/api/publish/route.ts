@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sitesStorage } from "@/lib/sitesStorage";
+import { injectMetricsTracking } from "@/lib/metricsTracking";
 
 /**
  * API Route to handle site publishing.
@@ -75,7 +76,10 @@ export async function POST(req: NextRequest) {
       .replace(/>\s+</g, "><")         // Remove spaces between tags
       .trim();
 
-    // 3. Final Bundle Generation (Simulation)
+    // 3. Inject tracking script for real analytics
+    optimizedHtml = injectMetricsTracking(optimizedHtml, siteId);
+
+    // 4. Final Bundle Generation (Simulation)
     // In a production environment, this could trigger a build process or upload to CDN
     const finalBundle = {
       "index.html": optimizedHtml,
@@ -90,7 +94,7 @@ export async function POST(req: NextRequest) {
       publishedAt: new Date().toISOString()
     };
 
-    // 4. Update site status to 'published'
+    // 5. Update site status to 'published'
     const siteData = await sitesStorage.get(siteId);
     if (siteData) {
       await sitesStorage.set(siteId, {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,21 @@ export default function PreviewPage() {
   const [sourceUrl, setSourceUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sessionStartedAtRef = useRef<number | null>(null);
+  const sessionEndedRef = useRef(false);
+
+  const sendMetricEvent = async (type: string, extra: Record<string, unknown> = {}) => {
+    try {
+      await fetch("/api/metrics/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteId: id, type, ...extra }),
+        keepalive: true,
+      });
+    } catch {
+      // Silent fail: analytics should never block user flow.
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -59,6 +74,37 @@ export default function PreviewPage() {
 
     fetchSite();
   }, [authLoading, user?.uid, id]);
+
+  useEffect(() => {
+    if (loading || error || !html || !id) return;
+
+    sessionStartedAtRef.current = Date.now();
+    sessionEndedRef.current = false;
+    void sendMetricEvent("page_view", { source: "preview_wrapper" });
+
+    const flushSession = () => {
+      if (sessionEndedRef.current) return;
+      sessionEndedRef.current = true;
+      const startedAt = sessionStartedAtRef.current || Date.now();
+      const durationMs = Math.max(0, Date.now() - startedAt);
+      void sendMetricEvent("session_end", { durationMs, source: "preview_wrapper" });
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        flushSession();
+      }
+    };
+
+    window.addEventListener("beforeunload", flushSession);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", flushSession);
+      flushSession();
+    };
+  }, [loading, error, html, id]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col">

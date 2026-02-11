@@ -178,8 +178,13 @@ export default function Nav() {
               <ChevronRight size={24} />
             </button>
             <button
-              className="p-2 text-white"
+              className={`p-2 rounded-xl border transition-all duration-300 active:scale-95 ${
+                isOpen
+                  ? "text-amber-300 border-amber-400/60 bg-amber-400/15 shadow-[0_0_18px_rgba(251,191,36,0.45)]"
+                  : "text-white border-transparent hover:text-amber-200 hover:border-amber-400/30 hover:bg-amber-400/10 hover:shadow-[0_0_12px_rgba(251,191,36,0.25)]"
+              }`}
               onClick={() => setIsOpen(!isOpen)}
+              aria-label={isOpen ? "Cerrar menu" : "Abrir menu"}
             >
               {isOpen ? (
                 <svg
@@ -220,65 +225,74 @@ export default function Nav() {
         {/* Mobile Menu Overlay - Portaled to body to avoid clipping */}
         {isOpen &&
           createPortal(
-            <div className="fixed inset-0 z-[100] bg-bg flex flex-col pt-24 px-6 animate-in fade-in slide-in-from-top-4 duration-200 overflow-y-auto">
+            <div className="fixed inset-0 z-[100]">
               <button
-                className="absolute top-4 right-4 p-2 text-white"
+                className="absolute inset-0 bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-200"
                 onClick={() => setIsOpen(false)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                aria-label="Cerrar menu"
+              />
+
+              <aside className="absolute left-0 top-0 h-full w-[86%] max-w-sm border-r border-amber-400/25 bg-[linear-gradient(180deg,rgba(14,14,16,0.98),rgba(10,10,12,0.96))] px-6 pb-8 pt-24 shadow-[0_0_35px_rgba(251,191,36,0.2)] animate-in slide-in-from-left duration-300 overflow-y-auto">
+                <button
+                  className="absolute top-4 right-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-2 text-amber-200 transition-colors hover:bg-amber-400/20"
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Cerrar menu"
                 >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-
-              <div className="flex flex-col gap-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-2xl font-medium py-4 border-b border-white/5 text-white hover:text-white transition-colors"
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
 
-              <div className="mt-8 flex flex-col gap-4">
-                {!session ? (
-                  <>
+                <div className="flex flex-col gap-2">
+                  {navLinks.map((link) => (
                     <Link
-                      href="/auth?tab=login"
-                      className="btn btn-secondary w-full py-4 text-lg rounded-full text-center hover:scale-105 transition-transform"
+                      key={link.href}
+                      href={link.href}
+                      className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-lg font-semibold text-white transition-all hover:border-amber-300/40 hover:bg-amber-300/10 hover:text-amber-100"
                     >
-                      {t("nav.login")}
+                      {link.name}
                     </Link>
-                    <Link
-                      href="/auth?tab=register"
-                      className="btn btn-primary w-full py-4 text-lg rounded-full text-center hover:scale-105 transition-transform"
+                  ))}
+                </div>
+
+                <div className="mt-8 flex flex-col gap-4">
+                  {!session ? (
+                    <>
+                      <Link
+                        href="/auth?tab=login"
+                        className="w-full rounded-full border border-amber-300/60 bg-amber-300/10 py-3 text-center text-base font-bold text-amber-200 transition-all hover:bg-amber-300/20"
+                      >
+                        {t("nav.login")}
+                      </Link>
+                      <Link
+                        href="/auth?tab=register"
+                        className="w-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 py-3 text-center text-base font-black text-black transition-all hover:brightness-110"
+                      >
+                        {t("nav.create_account")}
+                      </Link>
+                    </>
+                  ) : (
+                    <button
+                      onClick={logout}
+                      className="flex items-center justify-center gap-3 w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full border border-red-500/20 transition-all active:scale-95"
                     >
-                      {t("nav.create_account")}
-                    </Link>
-                  </>
-                ) : (
-                  <button
-                    onClick={logout}
-                    className="flex items-center justify-center gap-3 w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full border border-red-500/20 transition-all active:scale-95"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className="font-bold uppercase tracking-wider">{t("nav.logout")}</span>
-                  </button>
-                )}
-              </div>
+                      <LogOut className="w-5 h-5" />
+                      <span className="font-bold uppercase tracking-wider">{t("nav.logout")}</span>
+                    </button>
+                  )}
+                </div>
+              </aside>
             </div>,
             document.body,
           )}

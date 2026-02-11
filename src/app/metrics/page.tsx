@@ -99,28 +99,32 @@ export default function MetricsPage() {
       label: "Visitas Totales", 
       value: data?.summary?.totalVisits || "0", 
       icon: <Users className="w-5 h-5 text-blue-400" />, 
-      trend: "+12.5%",
+      trend: data?.summary?.trends?.visits?.label || "+0.0%",
+      trendPositive: data?.summary?.trends?.visits?.positive ?? true,
       color: "blue"
     },
     { 
-      label: "Conversión Media", 
+      label: "Conversion Media", 
       value: data?.summary?.avgConversion || "0%", 
       icon: <TrendingUp className="w-5 h-5 text-emerald-400" />, 
-      trend: "+0.8%",
+      trend: data?.summary?.trends?.conversion?.label || "+0.0%",
+      trendPositive: data?.summary?.trends?.conversion?.positive ?? true,
       color: "emerald"
     },
     { 
-      label: "Tiempo en Página", 
+      label: "Tiempo en Pagina", 
       value: data?.summary?.avgLoadTime || "0s", 
       icon: <Clock className="w-5 h-5 text-purple-400" />, 
-      trend: "-2s",
+      trend: data?.summary?.trends?.loadTime?.label || "+0.0s",
+      trendPositive: data?.summary?.trends?.loadTime?.positive ?? true,
       color: "purple"
     },
     { 
       label: "Clicks Totales", 
       value: data?.summary?.totalClicks || "0", 
       icon: <MousePointer2 className="w-5 h-5 text-amber-400" />, 
-      trend: "+18.2%",
+      trend: data?.summary?.trends?.clicks?.label || "+0.0%",
+      trendPositive: data?.summary?.trends?.clicks?.positive ?? true,
       color: "amber"
     },
   ];
@@ -193,7 +197,7 @@ export default function MetricsPage() {
                   <div className="p-3 bg-white/5 rounded-2xl group-hover:scale-110 transition-transform">
                     {stat.icon}
                   </div>
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.trend.startsWith("+") ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
+                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.trendPositive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
                     {stat.trend}
                   </span>
                 </div>

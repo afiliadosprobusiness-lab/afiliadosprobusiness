@@ -9,6 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
 import { doc as firestoreDoc, getDoc, setDoc } from "firebase/firestore";
+import { injectMetricsTracking } from "@/lib/metricsTracking";
 
 export default function EditorPage() {
   const { user: session, loading: authLoading } = useAuth(true);
@@ -330,7 +331,7 @@ export default function EditorPage() {
 
       const publishPayload: Record<string, any> = {
         id,
-        html: cleanHtml,
+        html: injectMetricsTracking(cleanHtml, id),
         userId: session.uid,
         published: true,
         status: "published",
