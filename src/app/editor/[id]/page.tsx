@@ -270,7 +270,16 @@ export default function EditorPage() {
       doc.querySelectorAll(".selected-element").forEach(e => e.classList.remove("selected-element"));
       
       // Asegurar que los scripts de edición no se guarden
-      doc.querySelectorAll("script[id^='editor-']").forEach(s => s.remove());
+      // Persistir como HTML estatico para evitar que scripts del sitio original
+      // restauren el contenido original despues de editar.
+      doc.querySelectorAll("script").forEach((scriptEl) => scriptEl.remove());
+      doc.querySelectorAll("*").forEach((el) => {
+        Array.from(el.attributes).forEach((attr) => {
+          if (attr.name.toLowerCase().startsWith("on")) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
 
       const updatedHtml = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
       if (!session?.uid) {

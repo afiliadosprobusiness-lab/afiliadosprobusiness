@@ -17,6 +17,14 @@ function isValidUrl(url: string) {
   }
 }
 
+function normalizeUrl(input: string) {
+  const value = input.trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) return `https:${value}`;
+  return `https://${value}`;
+}
+
 export default function WebClonerPage() {
   const { user, loading: authLoading } = useAuth(true);
   const { t } = useLanguage();
@@ -29,7 +37,7 @@ export default function WebClonerPage() {
   const [fetchingSites, setFetchingSites] = useState(true);
   const [sitesError, setSitesError] = useState<string | null>(null);
 
-  const debouncedUrl = useMemo(() => url, [url]);
+  const debouncedUrl = useMemo(() => normalizeUrl(url), [url]);
 
   const fetchPublishedSites = async (uid: string) => {
     setFetchingSites(true);
@@ -66,7 +74,7 @@ export default function WebClonerPage() {
   }, [authLoading, user?.uid]);
 
   const handleOpenEditor = async () => {
-    if (!html || !isValidUrl(url)) return;
+    if (!html || !isValidUrl(debouncedUrl)) return;
 
     setSavingToEditor(true);
     try {
@@ -85,7 +93,7 @@ export default function WebClonerPage() {
       const sitePayload = {
         id: siteId,
         html,
-        url,
+        url: debouncedUrl,
         userId: user.uid,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -245,12 +253,16 @@ export default function WebClonerPage() {
                   placeholder="https://ejemplo.com"
                   className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-cyan-500 outline-none text-sm md:text-base"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value.trim())}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onBlur={() => {
+                    if (!url.trim()) return;
+                    setUrl(normalizeUrl(url));
+                  }}
                 />
               </div>
               <button
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-500 text-black font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-95 shadow-lg shadow-cyan-500/20"
-                disabled={!isValidUrl(url) || !html || savingToEditor || authLoading || !user?.uid}
+                disabled={!isValidUrl(debouncedUrl) || !html || savingToEditor || authLoading || !user?.uid}
                 onClick={handleOpenEditor}
                 aria-label="Abrir editor"
               >

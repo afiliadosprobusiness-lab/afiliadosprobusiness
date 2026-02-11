@@ -25,6 +25,18 @@ function sanitizeHtml(html: string, baseUrl: string): string {
   sanitized = sanitized.replace(/\s+integrity=["'].*?["']/gi, '');
   sanitized = sanitized.replace(/\s+crossorigin=["'].*?["']/gi, '');
 
+  // 4.1 Remove executable scripts from cloned source to keep edits stable.
+  // (Inline and external scripts from the original site tend to overwrite edited DOM.)
+  sanitized = sanitized.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (scriptTag) => {
+    if (/type=["']application\/ld\+json["']/i.test(scriptTag)) {
+      return scriptTag;
+    }
+    return "<!-- source script removed -->";
+  });
+
+  // 4.2 Remove inline JS handlers that can trigger runtime mutations.
+  sanitized = sanitized.replace(/\son[a-z]+\s*=\s*(".*?"|'.*?'|[^\s>]+)/gi, "");
+
   // 5. Pre-fix relative URLs in HTML attributes (except srcset, handled separately)
   const urlAttributes = ['src', 'href', 'action', 'data-src', 'data-href', 'poster'];
   urlAttributes.forEach(attr => {
