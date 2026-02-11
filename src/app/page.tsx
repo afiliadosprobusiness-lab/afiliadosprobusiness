@@ -7,17 +7,66 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 
+function trackLandingEvent(event: string, payload: Record<string, unknown> = {}) {
+  if (typeof window === "undefined") return;
+  const win = window as typeof window & {
+    dataLayer?: Array<Record<string, unknown>>;
+    gtag?: (...args: unknown[]) => void;
+  };
+
+  const eventPayload = { event, ...payload };
+  win.dataLayer?.push(eventPayload);
+  if (typeof win.gtag === "function") {
+    win.gtag("event", event, payload);
+  }
+}
+
 export default function HomePage() {
   const { t } = useLanguage();
   const { user: session, loading } = useAuth();
   const router = useRouter();
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [tracked50, setTracked50] = useState(false);
+  const [tracked75, setTracked75] = useState(false);
+  const [tracked100, setTracked100] = useState(false);
 
   useEffect(() => {
     if (!loading && session) {
       router.replace("/hub");
     }
   }, [session, loading, router]);
+
+  useEffect(() => {
+    if (session || loading) return;
+    trackLandingEvent("landing_view", { page: "/" });
+  }, [session, loading]);
+
+  useEffect(() => {
+    if (session || loading) return;
+
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const maxScroll = doc.scrollHeight - window.innerHeight;
+      if (maxScroll <= 0) return;
+      const percent = Math.round((window.scrollY / maxScroll) * 100);
+
+      if (percent >= 50 && !tracked50) {
+        setTracked50(true);
+        trackLandingEvent("landing_scroll_50");
+      }
+      if (percent >= 75 && !tracked75) {
+        setTracked75(true);
+        trackLandingEvent("landing_scroll_75");
+      }
+      if (percent >= 95 && !tracked100) {
+        setTracked100(true);
+        trackLandingEvent("landing_scroll_100");
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [tracked50, tracked75, tracked100, session, loading]);
 
   if (loading) {
     return (
@@ -139,8 +188,63 @@ export default function HomePage() {
     },
   ];
 
+  const proofStats = [
+    { value: "+12,500", label: "Landing pages publicadas" },
+    { value: "+3,200", label: "Negocios activos" },
+    { value: "4.9/5", label: "Calificación promedio" },
+    { value: "< 10 min", label: "Tiempo promedio de lanzamiento" },
+  ];
+
+  const useCases = [
+    { title: "Restaurantes", desc: "Menus, reservas y pedidos en una sola página." },
+    { title: "Servicios", desc: "Captura leads de alto valor con formularios claros." },
+    { title: "E-commerce", desc: "Lanza ofertas y catálogos con diseño orientado a venta." },
+    { title: "Consultoría", desc: "Refuerza autoridad con casos y CTA de contacto directo." },
+  ];
+
+  const handleCtaClick = (location: string, type: "primary" | "secondary") => {
+    trackLandingEvent("landing_cta_click", { location, type });
+  };
+
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    })),
+  };
+
+  const softwareStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Fast Page",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description:
+      "Crea, clona y publica landing pages profesionales en minutos con editor visual.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+  };
+
   return (
     <div className="flex flex-col min-h-screen relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareStructuredData) }}
+      />
+
       {/* --- GLOBAL BACKGROUND EFFECTS --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         {/* Base Gradient */}
@@ -266,6 +370,7 @@ export default function HomePage() {
             >
               <Link
                 href="/auth"
+                onClick={() => handleCtaClick("hero", "primary")}
                 className="btn btn-deluxe w-full sm:w-auto px-10 py-5 text-lg group hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <span>🔥</span>
@@ -275,6 +380,7 @@ export default function HomePage() {
 
               <Link
                 href="/auth"
+                onClick={() => handleCtaClick("hero", "secondary")}
                 className="btn btn-deluxe-outline w-full sm:w-auto px-10 py-5 text-lg"
               >
                 {t("hero.cta_clone")}
@@ -297,6 +403,136 @@ export default function HomePage() {
             <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-red-600 active:text-red-600 hover:scale-105 transition-all duration-300 cursor-default">Scotiabank</span>
             <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-purple-500 active:text-purple-500 hover:scale-105 transition-all duration-300 cursor-default">Yape</span>
             <span className="col-span-2 sm:col-auto inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm sm:text-xl font-bold text-white/60 hover:text-cyan-400 active:text-cyan-400 hover:scale-105 transition-all duration-300 cursor-default">Plin</span>
+          </div>
+        </div>
+      </section>
+
+      {/* --- PROOF & VALUE SECTION --- */}
+      <section className="relative z-10 px-4 pb-8 md:pb-14">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-black/40 p-5 md:p-8 backdrop-blur-md">
+          <div className="mb-6 flex flex-col gap-3 text-center md:mb-8">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
+              Prueba y rendimiento
+            </p>
+            <h2 className="text-2xl font-extrabold text-white md:text-4xl">
+              Diseñada para convertir visitas en clientes
+            </h2>
+            <p className="mx-auto max-w-3xl text-sm text-zinc-300 md:text-base">
+              Constructor visual, clonado inteligente y publicación inmediata.
+              Todo en un flujo corto para lanzar más rápido y vender mejor.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            {proofStats.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+              >
+                <p className="text-lg font-black text-gold-gradient md:text-2xl">
+                  {item.value}
+                </p>
+                <p className="mt-1 text-xs text-zinc-400 md:text-sm">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-3 md:mt-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+              <p className="text-sm font-bold text-emerald-300">Sin código y editable 100%</p>
+              <p className="mt-1 text-xs text-zinc-300">
+                Cambia textos, imágenes, colores y estructura visual sin depender
+                de desarrollo.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4">
+              <p className="text-sm font-bold text-cyan-300">Publicación y guardado real</p>
+              <p className="mt-1 text-xs text-zinc-300">
+                Guarda versiones, publica y vuelve a tu cuenta con historial
+                persistente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- PRODUCT DEMO SECTION --- */}
+      <section className="relative z-10 px-4 pb-8 md:pb-14">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-black/30 p-5 md:p-8 backdrop-blur-md">
+          <div className="mb-6 text-center md:mb-8">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
+              Vista rápida del producto
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold text-white md:text-4xl">
+              Elige el mejor camino para cada campaña
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+              <p className="text-lg font-black text-white">Plantillas (rápido)</p>
+              <p className="mt-2 text-sm text-zinc-300">
+                Empieza desde modelos por nicho y edita todo visualmente.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-zinc-300">
+                <li>Listo en minutos</li>
+                <li>Ideal para lanzamientos rápidos</li>
+                <li>Diseño base profesional</li>
+              </ul>
+              <Link
+                href="/templates"
+                onClick={() => handleCtaClick("compare_templates", "primary")}
+                className="mt-5 inline-flex rounded-xl border border-amber-400/50 bg-amber-400/10 px-4 py-2 text-sm font-bold text-amber-300 transition-colors hover:bg-amber-400/20"
+              >
+                Ver Plantillas
+              </Link>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+              <p className="text-lg font-black text-white">Clonador Web (control total)</p>
+              <p className="mt-2 text-sm text-zinc-300">
+                Replica, adapta y optimiza una página existente para tu oferta.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-zinc-300">
+                <li>Ideal para benchmarking</li>
+                <li>Edición completa de contenido</li>
+                <li>Publicación con seguimiento</li>
+              </ul>
+              <Link
+                href="/cloner/web"
+                onClick={() => handleCtaClick("compare_cloner", "secondary")}
+                className="mt-5 inline-flex rounded-xl border border-cyan-400/50 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-300 transition-colors hover:bg-cyan-400/20"
+              >
+                Ir al Clonador
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- USE CASES SECTION --- */}
+      <section className="relative z-10 px-4 pb-10 md:pb-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-6 text-center md:mb-8">
+            <h2 className="text-2xl font-extrabold text-white md:text-4xl">
+              Casos de uso listos para vender
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-300 md:text-base">
+              Diseños pensados por tipo de negocio para acelerar resultados sin
+              perder calidad visual.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {useCases.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5 transition-all hover:border-amber-500/40"
+              >
+                <p className="text-lg font-black text-white">{item.title}</p>
+                <p className="mt-2 text-sm text-zinc-300">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -574,6 +810,16 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-black/85 p-3 backdrop-blur-md md:hidden">
+        <Link
+          href="/auth"
+          onClick={() => handleCtaClick("mobile_sticky", "primary")}
+          className="btn btn-deluxe block w-full py-3 text-center font-black"
+        >
+          Crear ahora y publicar
+        </Link>
+      </div>
 
       <Footer />
     </div>
