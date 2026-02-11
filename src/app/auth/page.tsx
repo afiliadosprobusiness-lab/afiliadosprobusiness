@@ -18,6 +18,9 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
+const CANONICAL_AUTH_HOST =
+  process.env.NEXT_PUBLIC_AUTH_CANONICAL_HOST || "fastpage2-0.vercel.app";
+
 export default function AuthPage() {
   return (
     <Suspense fallback={<div>Cargando...</div>}>
@@ -43,11 +46,33 @@ function AuthContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleError, setIsGoogleError] = useState(false);
 
+  const isCanonicalRedirectNeeded = () => {
+    if (typeof window === "undefined") return false;
+    const currentHost = window.location.host;
+    if (currentHost === CANONICAL_AUTH_HOST) return false;
+
+    // Redirect known alias/preview hosts to canonical auth host for OAuth compatibility.
+    return currentHost === "fastpage-eight.vercel.app" || currentHost.endsWith(".vercel.app");
+  };
+
+  const redirectToCanonicalAuthHost = () => {
+    if (typeof window === "undefined") return;
+    const target = new URL(window.location.href);
+    target.host = CANONICAL_AUTH_HOST;
+    window.location.href = target.toString();
+  };
+
   useEffect(() => {
     if (searchParams.get("tab") === "register") {
       setTab("register");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!isCanonicalRedirectNeeded()) return;
+    showToast("Redirigiendo al dominio seguro de autenticación...");
+    setTimeout(() => redirectToCanonicalAuthHost(), 700);
+  }, []);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -241,6 +266,12 @@ function AuthContent() {
   }, [router]);
 
   const handleGoogleLogin = async () => {
+    if (isCanonicalRedirectNeeded()) {
+      showToast("Redirigiendo para iniciar sesión con Google...");
+      setTimeout(() => redirectToCanonicalAuthHost(), 500);
+      return;
+    }
+
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
@@ -258,7 +289,10 @@ function AuthContent() {
     } catch (error: any) {
       console.error("Google Login Error:", error);
       
-      if (error.code === 'auth/popup-blocked') {
+      if (error.code === "auth/unauthorized-domain") {
+        showToast("Dominio no autorizado para Google. Redirigiendo...");
+        setTimeout(() => redirectToCanonicalAuthHost(), 700);
+      } else if (error.code === 'auth/popup-blocked') {
         showToast("El navegador bloqueó la ventana emergente. Por favor, habilítala.");
       } else if (error.code === 'auth/cancelled-popup-request') {
         // Ignorar
