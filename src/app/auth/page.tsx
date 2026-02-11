@@ -57,7 +57,8 @@ function AuthContent() {
 
   // Validación de configuración al cargar
   useEffect(() => {
-    if (!auth.app.options.apiKey || auth.app.options.apiKey === "dummy-key") {
+    const apiKey = auth.app.options.apiKey;
+    if (!apiKey || apiKey === "dummy-key" || apiKey === "dummy-key-build") {
       showToast("⚠️ Sistema en modo mantenimiento: Falta configurar API Key de Firebase.");
     }
   }, []);
@@ -152,7 +153,8 @@ function AuthContent() {
         "auth/weak-password": "La contraseña es muy débil. Usa al menos 6 caracteres. 🔒",
         "auth/invalid-email": "El formato del correo electrónico no es válido. 📩",
         "auth/operation-not-allowed": "El registro con email/contraseña no está habilitado en Firebase. 🚫",
-        "auth/api-key-not-valid": "Error crítico: La API Key de Firebase no es válida. Contacta al soporte. 🔑",
+        "auth/api-key-not-valid": "Error crítico: La API Key de Firebase no es válida o falta. Contacta al soporte. 🔑",
+        "auth/invalid-api-key": "Error crítico: La API Key de Firebase es inválida. 🔑",
         "auth/network-request-failed": "Error de conexión. Revisa tu internet. 🌐",
         "auth/internal-error": "Error interno de Firebase. Intenta de nuevo más tarde. ⚙️"
       };
@@ -216,7 +218,8 @@ function AuthContent() {
         "auth/invalid-credential": "Credenciales inválidas o expiradas. 🚫",
         "auth/user-disabled": "Esta cuenta ha sido desactivada. ⚠️",
         "auth/too-many-requests": "Demasiados intentos. Intenta más tarde. ⏳",
-        "auth/api-key-not-valid": "Error crítico: La API Key de Firebase no es válida. 🔑"
+        "auth/api-key-not-valid": "Error crítico: La API Key de Firebase no es válida. 🔑",
+        "auth/invalid-api-key": "Error crítico: La API Key de Firebase es inválida. 🔑"
       };
 
       const message = errorMessages[error.code] || `Error al iniciar sesión: ${error.message} ⚠️`;
@@ -293,7 +296,8 @@ function AuthContent() {
         'auth/popup-closed-by-user': "Inicio de sesión cancelado por el usuario. 👤",
         'auth/cancelled-popup-request': "Solicitud cancelada. Intenta de nuevo. 🔄",
         'auth/unauthorized-domain': "Este dominio no está autorizado en la consola de Firebase. 🌐",
-        'auth/api-key-not-valid': "Error crítico: La API Key de Firebase no es válida. 🔑"
+        'auth/api-key-not-valid': "Error crítico: La API Key de Firebase no es válida. 🔑",
+        'auth/invalid-api-key': "Error crítico: La API Key de Firebase es inválida. 🔑"
       };
 
       if (error.message?.includes('Cross-Origin-Opener-Policy')) {
