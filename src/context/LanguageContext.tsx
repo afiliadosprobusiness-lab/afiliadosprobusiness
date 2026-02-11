@@ -364,6 +364,148 @@ const translations: Record<string, Record<Language, string>> = {
   },
 
   // General
+  // Landing Extended
+  "landing.schema.description": {
+    es: "Crea, clona y publica landing pages profesionales en minutos con editor visual.",
+    en: "Create, clone, and publish professional landing pages in minutes with a visual editor.",
+    pt: "Crie, clone e publique landing pages profissionais em minutos com editor visual.",
+  },
+  "landing.proof.eyebrow": {
+    es: "Prueba y rendimiento",
+    en: "Proof and performance",
+    pt: "Prova e performance",
+  },
+  "landing.proof.title": {
+    es: "Disenada para convertir visitas en clientes",
+    en: "Built to turn visitors into customers",
+    pt: "Projetada para converter visitas em clientes",
+  },
+  "landing.proof.subtitle": {
+    es: "Constructor visual, clonado inteligente y publicacion inmediata. Todo en un flujo corto para lanzar mas rapido y vender mejor.",
+    en: "Visual builder, smart cloning, and instant publishing. Everything in a short flow to launch faster and sell better.",
+    pt: "Construtor visual, clonagem inteligente e publicacao imediata. Tudo em um fluxo curto para lancar mais rapido e vender melhor.",
+  },
+  "landing.proof.stat1": { es: "paginas publicadas", en: "published pages", pt: "paginas publicadas" },
+  "landing.proof.stat2": { es: "proyectos activos", en: "active projects", pt: "projetos ativos" },
+  "landing.proof.stat3": { es: "satisfaccion promedio", en: "average satisfaction", pt: "satisfacao media" },
+  "landing.proof.stat4": { es: "tiempo para publicar", en: "time to publish", pt: "tempo para publicar" },
+  "landing.proof.card1.title": {
+    es: "Sin codigo y editable 100%",
+    en: "No-code and 100% editable",
+    pt: "Sem codigo e 100% editavel",
+  },
+  "landing.proof.card1.desc": {
+    es: "Cambia textos, imagenes, colores y estructura visual sin depender de desarrollo.",
+    en: "Change text, images, colors, and visual structure without relying on development.",
+    pt: "Altere textos, imagens, cores e estrutura visual sem depender de desenvolvimento.",
+  },
+  "landing.proof.card2.title": {
+    es: "Publicacion y guardado real",
+    en: "Real publish and save",
+    pt: "Publicacao e salvamento reais",
+  },
+  "landing.proof.card2.desc": {
+    es: "Guarda versiones, publica y vuelve a tu cuenta con historial persistente.",
+    en: "Save versions, publish, and return to your account with persistent history.",
+    pt: "Salve versoes, publique e volte para sua conta com historico persistente.",
+  },
+  "landing.product.eyebrow": {
+    es: "Vista rapida del producto",
+    en: "Quick product view",
+    pt: "Visao rapida do produto",
+  },
+  "landing.product.title": {
+    es: "Elige el mejor camino para cada campana",
+    en: "Choose the best path for each campaign",
+    pt: "Escolha o melhor caminho para cada campanha",
+  },
+  "landing.product.templates.title": {
+    es: "Plantillas (rapido)",
+    en: "Templates (fast)",
+    pt: "Modelos (rapido)",
+  },
+  "landing.product.templates.desc": {
+    es: "Empieza desde modelos por nicho y edita todo visualmente.",
+    en: "Start from niche templates and edit everything visually.",
+    pt: "Comece com modelos por nicho e edite tudo visualmente.",
+  },
+  "landing.product.templates.b1": { es: "Listo en minutos", en: "Ready in minutes", pt: "Pronto em minutos" },
+  "landing.product.templates.b2": { es: "Ideal para lanzamientos rapidos", en: "Ideal for fast launches", pt: "Ideal para lancamentos rapidos" },
+  "landing.product.templates.b3": { es: "Diseno base profesional", en: "Professional base design", pt: "Design base profissional" },
+  "landing.product.templates.cta": { es: "Ver Plantillas", en: "See Templates", pt: "Ver Modelos" },
+  "landing.product.cloner.title": {
+    es: "Clonador Web (control total)",
+    en: "Web Cloner (full control)",
+    pt: "Clonador Web (controle total)",
+  },
+  "landing.product.cloner.desc": {
+    es: "Replica, adapta y optimiza una pagina existente para tu oferta.",
+    en: "Replicate, adapt, and optimize an existing page for your offer.",
+    pt: "Replique, adapte e otimize uma pagina existente para sua oferta.",
+  },
+  "landing.product.cloner.b1": { es: "Ideal para benchmarking", en: "Ideal for benchmarking", pt: "Ideal para benchmarking" },
+  "landing.product.cloner.b2": { es: "Edicion completa de contenido", en: "Complete content editing", pt: "Edicao completa de conteudo" },
+  "landing.product.cloner.b3": { es: "Publicacion con seguimiento", en: "Publishing with tracking", pt: "Publicacao com acompanhamento" },
+  "landing.product.cloner.cta": { es: "Ir al Clonador", en: "Go to Cloner", pt: "Ir para o Clonador" },
+  "landing.useCases.title": {
+    es: "Casos de uso listos para vender",
+    en: "Use cases ready to sell",
+    pt: "Casos de uso prontos para vender",
+  },
+  "landing.useCases.subtitle": {
+    es: "Disenos pensados por tipo de negocio para acelerar resultados sin perder calidad visual.",
+    en: "Designs tailored by business type to accelerate results without losing visual quality.",
+    pt: "Designs pensados por tipo de negocio para acelerar resultados sem perder qualidade visual.",
+  },
+  "landing.useCases.cta": { es: "Ver plantilla ideal", en: "See ideal template", pt: "Ver modelo ideal" },
+  "landing.useCases.restaurant.title": { es: "Restaurantes", en: "Restaurants", pt: "Restaurantes" },
+  "landing.useCases.restaurant.tag": { es: "alto ticket", en: "high ticket", pt: "alto ticket" },
+  "landing.useCases.restaurant.desc": {
+    es: "Menus, reservas y pedidos en una sola pagina.",
+    en: "Menus, bookings, and orders on one page.",
+    pt: "Menus, reservas e pedidos em uma unica pagina.",
+  },
+  "landing.useCases.services.title": { es: "Servicios", en: "Services", pt: "Servicos" },
+  "landing.useCases.services.tag": { es: "lead inmediato", en: "instant lead", pt: "lead imediato" },
+  "landing.useCases.services.desc": {
+    es: "Captura leads de alto valor con formularios claros.",
+    en: "Capture high-value leads with clear forms.",
+    pt: "Capture leads de alto valor com formularios claros.",
+  },
+  "landing.useCases.ecommerce.title": { es: "E-commerce", en: "E-commerce", pt: "E-commerce" },
+  "landing.useCases.ecommerce.tag": { es: "conversion rapida", en: "fast conversion", pt: "conversao rapida" },
+  "landing.useCases.ecommerce.desc": {
+    es: "Lanza ofertas y catalogos con diseno orientado a venta.",
+    en: "Launch offers and catalogs with a sales-oriented design.",
+    pt: "Lance ofertas e catalogos com design orientado para vendas.",
+  },
+  "landing.useCases.consulting.title": { es: "Consultoria", en: "Consulting", pt: "Consultoria" },
+  "landing.useCases.consulting.tag": { es: "marca premium", en: "premium brand", pt: "marca premium" },
+  "landing.useCases.consulting.desc": {
+    es: "Refuerza autoridad con casos y CTA de contacto directo.",
+    en: "Build authority with case studies and direct-contact CTA.",
+    pt: "Reforce autoridade com casos e CTA de contato direto.",
+  },
+  "landing.mobile.stickyCta": {
+    es: "Crear ahora y publicar",
+    en: "Create now and publish",
+    pt: "Criar agora e publicar",
+  },
+
+  // Shared UI
+  "floating.scrollTop": { es: "Subir", en: "Scroll to top", pt: "Subir" },
+  "floating.toggleLanguage": { es: "Cambiar idioma", en: "Change language", pt: "Mudar idioma" },
+  "footer.description": {
+    es: "Plataforma profesional para crear y clonar landing pages",
+    en: "Professional platform to create and clone landing pages",
+    pt: "Plataforma profissional para criar e clonar landing pages",
+  },
+  "footer.rights": {
+    es: "© {year} Fast Page. Todos los derechos reservados.",
+    en: "© {year} Fast Page. All rights reserved.",
+    pt: "© {year} Fast Page. Todos os direitos reservados.",
+  },
+
   loading: { es: "Cargando...", en: "Loading...", pt: "Carregando..." },
 };
 

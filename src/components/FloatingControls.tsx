@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
-import { Globe, ArrowUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 
 export default function FloatingControls() {
   const [mounted, setMounted] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function FloatingControls() {
         <button
           onClick={scrollToTop}
           className="p-1.5 md:p-2 bg-zinc-900 border border-zinc-800 rounded-full shadow-xl hover:scale-110 transition-all group animate-fade-in"
-          aria-label="Subir"
+          aria-label={t("floating.scrollTop")}
         >
           <ArrowUp className="w-3.5 h-3.5 md:w-4 md:h-4 text-yellow-400" />
         </button>
@@ -45,7 +45,7 @@ export default function FloatingControls() {
       <button
         onClick={toggleLanguage}
         className="px-2 py-1 md:px-3 md:py-1.5 bg-zinc-900 border border-zinc-800 rounded-full shadow-xl hover:scale-105 transition-all flex items-center justify-center group"
-        aria-label="Cambiar Idioma"
+        aria-label={t("floating.toggleLanguage")}
       >
         <span className="text-[10px] md:text-xs font-bold text-white group-hover:text-yellow-400 transition-colors">
           {language === "es" ? "EN" : "ES"}

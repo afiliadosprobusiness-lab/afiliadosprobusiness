@@ -1,14 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { Zap } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FOOTER_LINKS = [
-  { label: "Hub", href: "/hub" },
-  { label: "Constructor", href: "/builder" },
-  { label: "Plantillas", href: "/templates" },
-  { label: "Clonador Web", href: "/cloner/web" },
+  { labelKey: "nav.hub", href: "/hub" },
+  { labelKey: "nav.builder", href: "/builder" },
+  { labelKey: "nav.templates", href: "/templates" },
+  { labelKey: "nav.cloner", href: "/cloner/web" },
 ];
 
 export default function Footer() {
+  const { t } = useLanguage();
   const year = new Date().getFullYear();
 
   return (
@@ -26,7 +30,7 @@ export default function Footer() {
                 Fast Page
               </p>
               <p className="text-xs text-zinc-400">
-                Plataforma profesional para crear y clonar landing pages
+                {t("footer.description")}
               </p>
             </div>
           </div>
@@ -38,14 +42,14 @@ export default function Footer() {
                 href={item.href}
                 className="transition-colors hover:text-amber-300"
               >
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ))}
           </nav>
         </div>
 
         <div className="mt-6 border-t border-white/10 pt-5 text-center text-xs text-zinc-500 md:text-left">
-          {`© ${year} Fast Page. Todos los derechos reservados.`}
+          {t("footer.rights").replace("{year}", String(year))}
         </div>
       </div>
     </footer>

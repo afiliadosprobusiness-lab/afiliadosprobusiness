@@ -189,44 +189,48 @@ export default function HomePage() {
   ];
 
   const proofStats = [
-    { value: "+12,500", label: "Landing pages publicadas" },
-    { value: "+3,200", label: "Negocios activos" },
-    { value: "4.9/5", label: "Calificación promedio" },
-    { value: "< 10 min", label: "Tiempo promedio de lanzamiento" },
+    { value: "+12,500", label: t("landing.proof.stat1") },
+    { value: "+3,200", label: t("landing.proof.stat2") },
+    { value: "4.9/5", label: t("landing.proof.stat3") },
+    { value: "< 10 min", label: t("landing.proof.stat4") },
   ];
 
   const useCases = [
     {
-      title: "Restaurantes",
-      desc: "Menus, reservas y pedidos en una sola página.",
-      emoji: "🍕",
-      tag: "Alto ticket",
+      key: "restaurant",
+      emoji: "\u{1F355}",
       accent: "from-red-500/35 to-orange-500/30",
       border: "hover:border-red-400/60",
+      title: t("landing.useCases.restaurant.title"),
+      tag: t("landing.useCases.restaurant.tag"),
+      desc: t("landing.useCases.restaurant.desc"),
     },
     {
-      title: "Servicios",
-      desc: "Captura leads de alto valor con formularios claros.",
-      emoji: "🛠️",
-      tag: "Lead inmediato",
+      key: "services",
+      emoji: "\u{1F6E0}\uFE0F",
       accent: "from-cyan-500/30 to-blue-500/25",
       border: "hover:border-cyan-400/60",
+      title: t("landing.useCases.services.title"),
+      tag: t("landing.useCases.services.tag"),
+      desc: t("landing.useCases.services.desc"),
     },
     {
-      title: "E-commerce",
-      desc: "Lanza ofertas y catálogos con diseño orientado a venta.",
-      emoji: "🛍️",
-      tag: "Conversión rápida",
+      key: "ecommerce",
+      emoji: "\u{1F6CD}\uFE0F",
       accent: "from-fuchsia-500/30 to-purple-500/25",
       border: "hover:border-fuchsia-400/60",
+      title: t("landing.useCases.ecommerce.title"),
+      tag: t("landing.useCases.ecommerce.tag"),
+      desc: t("landing.useCases.ecommerce.desc"),
     },
     {
-      title: "Consultoría",
-      desc: "Refuerza autoridad con casos y CTA de contacto directo.",
-      emoji: "📈",
-      tag: "Marca premium",
+      key: "consulting",
+      emoji: "\u{1F4C8}",
       accent: "from-amber-500/35 to-yellow-500/25",
       border: "hover:border-amber-400/60",
+      title: t("landing.useCases.consulting.title"),
+      tag: t("landing.useCases.consulting.tag"),
+      desc: t("landing.useCases.consulting.desc"),
     },
   ];
 
@@ -254,7 +258,7 @@ export default function HomePage() {
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     description:
-      "Crea, clona y publica landing pages profesionales en minutos con editor visual.",
+      t("landing.schema.description"),
     offers: {
       "@type": "Offer",
       price: "0",
@@ -440,14 +444,13 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-black/40 p-5 md:p-8 backdrop-blur-md">
           <div className="mb-6 flex flex-col gap-3 text-center md:mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
-              Prueba y rendimiento
+              {t("landing.proof.eyebrow")}
             </p>
             <h2 className="text-2xl font-extrabold text-white md:text-4xl">
-              Diseñada para convertir visitas en clientes
+              {t("landing.proof.title")}
             </h2>
             <p className="mx-auto max-w-3xl text-sm text-zinc-300 md:text-base">
-              Constructor visual, clonado inteligente y publicación inmediata.
-              Todo en un flujo corto para lanzar más rápido y vender mejor.
+              {t("landing.proof.subtitle")}
             </p>
           </div>
 
@@ -467,17 +470,15 @@ export default function HomePage() {
 
           <div className="mt-5 grid gap-3 md:mt-6 md:grid-cols-2">
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-              <p className="text-sm font-bold text-emerald-300">Sin código y editable 100%</p>
+              <p className="text-sm font-bold text-emerald-300">{t("landing.proof.card1.title")}</p>
               <p className="mt-1 text-xs text-zinc-300">
-                Cambia textos, imágenes, colores y estructura visual sin depender
-                de desarrollo.
+                {t("landing.proof.card1.desc")}
               </p>
             </div>
             <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4">
-              <p className="text-sm font-bold text-cyan-300">Publicación y guardado real</p>
+              <p className="text-sm font-bold text-cyan-300">{t("landing.proof.card2.title")}</p>
               <p className="mt-1 text-xs text-zinc-300">
-                Guarda versiones, publica y vuelve a tu cuenta con historial
-                persistente.
+                {t("landing.proof.card2.desc")}
               </p>
             </div>
           </div>
@@ -489,49 +490,49 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-black/30 p-5 md:p-8 backdrop-blur-md">
           <div className="mb-6 text-center md:mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
-              Vista rápida del producto
+              {t("landing.product.eyebrow")}
             </p>
             <h2 className="mt-2 text-2xl font-extrabold text-white md:text-4xl">
-              Elige el mejor camino para cada campaña
+              {t("landing.product.title")}
             </h2>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-              <p className="text-lg font-black text-white">Plantillas (rápido)</p>
+              <p className="text-lg font-black text-white">{t("landing.product.templates.title")}</p>
               <p className="mt-2 text-sm text-zinc-300">
-                Empieza desde modelos por nicho y edita todo visualmente.
+                {t("landing.product.templates.desc")}
               </p>
               <ul className="mt-4 space-y-2 text-sm text-zinc-300">
-                <li>Listo en minutos</li>
-                <li>Ideal para lanzamientos rápidos</li>
-                <li>Diseño base profesional</li>
+                <li>{t("landing.product.templates.b1")}</li>
+                <li>{t("landing.product.templates.b2")}</li>
+                <li>{t("landing.product.templates.b3")}</li>
               </ul>
               <Link
                 href="/templates"
                 onClick={() => handleCtaClick("compare_templates", "primary")}
                 className="mt-5 inline-flex rounded-xl border border-amber-400/50 bg-amber-400/10 px-4 py-2 text-sm font-bold text-amber-300 transition-colors hover:bg-amber-400/20"
               >
-                Ver Plantillas
+                {t("landing.product.templates.cta")}
               </Link>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-              <p className="text-lg font-black text-white">Clonador Web (control total)</p>
+              <p className="text-lg font-black text-white">{t("landing.product.cloner.title")}</p>
               <p className="mt-2 text-sm text-zinc-300">
-                Replica, adapta y optimiza una página existente para tu oferta.
+                {t("landing.product.cloner.desc")}
               </p>
               <ul className="mt-4 space-y-2 text-sm text-zinc-300">
-                <li>Ideal para benchmarking</li>
-                <li>Edición completa de contenido</li>
-                <li>Publicación con seguimiento</li>
+                <li>{t("landing.product.cloner.b1")}</li>
+                <li>{t("landing.product.cloner.b2")}</li>
+                <li>{t("landing.product.cloner.b3")}</li>
               </ul>
               <Link
                 href="/cloner/web"
                 onClick={() => handleCtaClick("compare_cloner", "secondary")}
                 className="mt-5 inline-flex rounded-xl border border-cyan-400/50 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-300 transition-colors hover:bg-cyan-400/20"
               >
-                Ir al Clonador
+                {t("landing.product.cloner.cta")}
               </Link>
             </div>
           </div>
@@ -543,7 +544,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <div className="relative mb-6 text-center md:mb-8">
             <div className="pointer-events-none absolute inset-x-0 -top-3 flex items-center justify-center gap-4 opacity-85">
-              {["🔥", "✨", "🚀", "💎"].map((emoji, idx) => (
+              {["\u{1F525}", "\u2728", "\u{1F680}", "\u{1F48E}"].map((emoji, idx) => (
                 <span
                   key={emoji}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-lg shadow-[0_8px_20px_rgba(0,0,0,0.35)] animate-bounce"
@@ -558,18 +559,17 @@ export default function HomePage() {
               ))}
             </div>
             <h2 className="text-2xl font-extrabold text-white md:text-4xl">
-              Casos de uso listos para vender
+              {t("landing.useCases.title")}
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-300 md:text-base">
-              Diseños pensados por tipo de negocio para acelerar resultados sin
-              perder calidad visual.
+              {t("landing.useCases.subtitle")}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {useCases.map((item) => (
               <div
-                key={item.title}
+                key={item.key}
                 className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60 p-5 transition-all duration-300 hover:-translate-y-1 ${item.border}`}
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
@@ -593,12 +593,11 @@ export default function HomePage() {
 
                   <Link
                     href="/templates"
-                    onClick={() => handleCtaClick(`use_case_${item.title.toLowerCase()}`, "secondary")}
+                    onClick={() => handleCtaClick(`use_case_${item.key}`, "secondary")}
                     className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-amber-300 transition-colors hover:text-amber-200"
                   >
-                    Ver plantilla ideal
-                    <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
-                      ↗
+                    {t("landing.useCases.cta")}
+                    <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">{"\u2192"}
                     </span>
                   </Link>
                 </div>
@@ -888,7 +887,7 @@ export default function HomePage() {
           onClick={() => handleCtaClick("mobile_sticky", "primary")}
           className="btn btn-deluxe block w-full py-3 text-center font-black"
         >
-          Crear ahora y publicar
+          {t("landing.mobile.stickyCta")}
         </Link>
       </div>
 
