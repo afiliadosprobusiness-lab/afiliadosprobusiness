@@ -3,12 +3,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDMlKjBgtv_cMZbNRImELk8cjpIc1aKPMw",
-  authDomain: "fastpage2-db56b.firebaseapp.com",
-  projectId: "fastpage2-db56b",
-  storageBucket: "fastpage2-db56b.firebasestorage.app",
-  messagingSenderId: "966925222629",
-  appId: "1:966925222629:web:07d4af0296310e9b270a0c"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-key",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "dummy-auth",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dummy-project",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "dummy-storage",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "dummy-sender",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "dummy-app"
 };
 
 // Initialize Firebase

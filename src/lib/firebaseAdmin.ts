@@ -8,14 +8,14 @@ if (!admin.apps.length) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        projectId: "fastpage2-db56b",
+        projectId: serviceAccount.project_id || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
       });
       isInitialized = true;
       console.log("[FirebaseAdmin] Initialized with Service Account Key");
     } else if (process.env.NODE_ENV === 'production') {
       // En producción (Vercel/Google Cloud), intentamos usar las credenciales predeterminadas del entorno
       admin.initializeApp({
-        projectId: "fastpage2-db56b",
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "fastpage2-db56b",
       });
       isInitialized = true;
       console.log("[FirebaseAdmin] Initialized with Default Application Credentials");
