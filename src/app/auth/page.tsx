@@ -18,8 +18,18 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
-const CANONICAL_AUTH_HOST =
-  process.env.NEXT_PUBLIC_AUTH_CANONICAL_HOST || "fastpage2-0.vercel.app";
+const DEFAULT_AUTH_CANONICAL_HOST = "fastpage-eight.vercel.app";
+const CANONICAL_AUTH_HOST = (
+  process.env.NEXT_PUBLIC_AUTH_CANONICAL_HOST || DEFAULT_AUTH_CANONICAL_HOST
+)
+  .trim()
+  .toLowerCase();
+const AUTH_ALIAS_HOSTS = (
+  process.env.NEXT_PUBLIC_AUTH_ALIAS_HOSTS || "fastpage2-0.vercel.app"
+)
+  .split(",")
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
 
 export default function AuthPage() {
   return (
@@ -48,11 +58,12 @@ function AuthContent() {
 
   const isCanonicalRedirectNeeded = () => {
     if (typeof window === "undefined") return false;
-    const currentHost = window.location.host;
+    const currentHost = window.location.host.toLowerCase();
+    if (!CANONICAL_AUTH_HOST) return false;
     if (currentHost === CANONICAL_AUTH_HOST) return false;
 
-    // Redirect known alias/preview hosts to canonical auth host for OAuth compatibility.
-    return currentHost === "fastpage-eight.vercel.app" || currentHost.endsWith(".vercel.app");
+    // Redirect only known alias hosts to canonical auth host.
+    return AUTH_ALIAS_HOSTS.includes(currentHost);
   };
 
   const redirectToCanonicalAuthHost = () => {
@@ -290,8 +301,12 @@ function AuthContent() {
       console.error("Google Login Error:", error);
       
       if (error.code === "auth/unauthorized-domain") {
-        showToast("Dominio no autorizado para Google. Redirigiendo...");
-        setTimeout(() => redirectToCanonicalAuthHost(), 700);
+        if (isCanonicalRedirectNeeded()) {
+          showToast("Dominio no autorizado para Google. Redirigiendo...");
+          setTimeout(() => redirectToCanonicalAuthHost(), 700);
+        } else {
+          showToast("Dominio no autorizado en Firebase. Agrega este dominio en Authentication > Authorized domains.");
+        }
       } else if (error.code === 'auth/popup-blocked') {
         showToast("El navegador bloqueó la ventana emergente. Por favor, habilítala.");
       } else if (error.code === 'auth/cancelled-popup-request') {
