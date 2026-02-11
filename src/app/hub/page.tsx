@@ -21,8 +21,7 @@ export default function HubPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const userName = user?.name || "Creador";
-
-  const isAdmin = user?.email === "admin@fastpage.com";
+  const isAdmin = user?.email === "afiliadosprobusiness@gmail.com";
 
   const handleLogout = async () => {
     await logout();

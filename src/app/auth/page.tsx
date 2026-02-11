@@ -61,7 +61,7 @@ function AuthContent() {
     try {
       console.log("Intentando sincronizar en Firestore:", user.email);
       const userRef = doc(db, "users", user.uid);
-      const is_admin = user.email === "admin@fastpage.com";
+      const is_admin = user.email === "afiliadosprobusiness@gmail.com";
       
       const userData = {
         uid: user.uid,
@@ -130,7 +130,7 @@ function AuthContent() {
       showToast("¡Cuenta creada exitosamente!");
       
       // Redirección basada en el rol
-      const target = email === "admin@fastpage.com" ? "/admin" : "/hub";
+      const target = email === "afiliadosprobusiness@gmail.com" ? "/admin" : "/hub";
       setTimeout(() => router.push(target), 1000);
     } catch (error: any) {
       console.error(error);
@@ -170,7 +170,7 @@ function AuthContent() {
       // Sincronización prioritaria antes de redireccionar
       await syncUserToFirestore(user);
 
-      if (user.email === "admin@fastpage.com") {
+      if (user.email === "afiliadosprobusiness@gmail.com") {
         router.push("/admin");
       } else {
         router.push("/hub");
@@ -211,7 +211,7 @@ function AuthContent() {
         await syncUserToFirestore(user);
 
         // Redirección inmediata después de asegurar datos
-        if (user.email === "admin@fastpage.com") {
+        if (user.email === "afiliadosprobusiness@gmail.com") {
           router.push("/admin");
         } else {
           router.push("/hub");
@@ -226,7 +226,7 @@ function AuthContent() {
           // Sincronización prioritaria
           await syncUserToFirestore(result.user);
           
-          if (result.user.email === "admin@fastpage.com") {
+          if (result.user.email === "afiliadosprobusiness@gmail.com") {
             router.push("/admin");
           } else {
             router.push("/hub");
@@ -252,7 +252,7 @@ function AuthContent() {
         await syncUserToFirestore(result.user);
 
         // Forzar redirección inmediata
-        const target = result.user.email === "admin@fastpage.com" ? "/admin" : "/hub";
+        const target = result.user.email === "afiliadosprobusiness@gmail.com" ? "/admin" : "/hub";
         window.location.href = target;
       }
     } catch (error: any) {

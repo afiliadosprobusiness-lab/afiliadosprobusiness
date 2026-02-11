@@ -82,7 +82,7 @@ export default function AdminPanel() {
     const session = localStorage.getItem("fp_session");
     if (session) {
       const userData = JSON.parse(session);
-      if (userData.email === "admin@fastpage.com") {
+      if (userData.email === "afiliadosprobusiness@gmail.com") {
         setAuthorized(true);
       } else {
         router.replace("/hub");
@@ -95,8 +95,8 @@ export default function AdminPanel() {
         router.replace("/auth");
         return;
       }
-
-      if (user.email !== "admin@fastpage.com") {
+  
+      if (user.email !== "afiliadosprobusiness@gmail.com") {
         router.replace("/hub");
         return;
       }
@@ -206,7 +206,7 @@ export default function AdminPanel() {
 
         <div className="flex items-center gap-6">
           <div className="hidden md:block text-right">
-            <p className="text-sm font-bold">admin@fastpage.com</p>
+            <p className="text-sm font-bold">afiliadosprobusiness@gmail.com</p>
             <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Sesión de Administrador</p>
           </div>
           <button 
@@ -322,7 +322,7 @@ export default function AdminPanel() {
                           <div>
                             <p className="text-sm font-bold text-white">
                               {user.name || "Sin nombre"}
-                              {user.email === "admin@fastpage.com" && (
+                              {user.email === "afiliadosprobusiness@gmail.com" && (
                                 <span className="ml-2 text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20">ROOT</span>
                               )}
                             </p>
@@ -351,7 +351,7 @@ export default function AdminPanel() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {user.email !== "admin@fastpage.com" ? (
+                          {user.email !== "afiliadosprobusiness@gmail.com" ? (
                             <>
                               <button 
                                 onClick={() => updateUserStatus(user.uid, user.status === 'suspended' ? 'active' : 'suspended')}
