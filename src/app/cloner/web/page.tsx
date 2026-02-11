@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap } from "lucide-react";
 
 function isValidUrl(url: string) {
@@ -27,38 +27,54 @@ export default function WebClonerPage() {
   const [savingToEditor, setSavingToEditor] = useState(false);
   const [publishedSites, setPublishedSites] = useState<any[]>([]);
   const [fetchingSites, setFetchingSites] = useState(true);
+  const [sitesError, setSitesError] = useState<string | null>(null);
 
   const debouncedUrl = useMemo(() => url, [url]);
 
-  const fetchPublishedSites = async () => {
+  const fetchPublishedSites = async (uid: string) => {
     setFetchingSites(true);
+    setSitesError(null);
     try {
-      const res = await fetch("/api/sites");
-      if (res.ok) {
-        const data = await res.json();
-        setPublishedSites(data);
-      } else {
-        setPublishedSites([]);
-      }
-    } catch (error) {
-      console.error("Error fetching sites:", error);
+      const q = query(collection(db, "cloned_sites"), where("userId", "==", uid));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      const published = data
+        .filter((site: any) => Boolean(site?.published))
+        .sort((a: any, b: any) => {
+          const timeA = Number(a?.publishedAt || a?.updatedAt || a?.createdAt || 0);
+          const timeB = Number(b?.publishedAt || b?.updatedAt || b?.createdAt || 0);
+          return timeB - timeA;
+        });
+      setPublishedSites(published);
+    } catch (err: any) {
+      console.error("Error fetching sites:", err);
       setPublishedSites([]);
+      setSitesError("No se pudieron cargar los proyectos publicados de tu cuenta.");
     } finally {
       setFetchingSites(false);
     }
   };
 
   useEffect(() => {
-    fetchPublishedSites();
-  }, []);
+    if (authLoading) return;
+    if (!user?.uid) {
+      setPublishedSites([]);
+      setFetchingSites(false);
+      return;
+    }
+    fetchPublishedSites(user.uid);
+  }, [authLoading, user?.uid]);
 
   const handleOpenEditor = async () => {
     if (!html || !isValidUrl(url)) return;
-    
+
     setSavingToEditor(true);
     try {
+      if (authLoading) {
+        throw new Error("Espera un momento mientras validamos tu sesion.");
+      }
       if (!user?.uid) {
-        throw new Error("Debes iniciar sesión para guardar y editar.");
+        throw new Error("Debes iniciar sesion para guardar y editar.");
       }
 
       const siteId =
@@ -74,30 +90,19 @@ export default function WebClonerPage() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         published: false,
-        status: "draft"
+        status: "draft",
       };
 
-      try {
-        await setDoc(doc(db, "cloned_sites", siteId), sitePayload);
-      } catch (firestoreError: any) {
-        const msg = String(firestoreError?.message || "").toLowerCase();
-        const code = String(firestoreError?.code || "").toLowerCase();
-        const permissionDenied =
-          msg.includes("missing or insufficient permissions") ||
-          msg.includes("permission-denied") ||
-          code.includes("permission-denied");
-
-        if (!permissionDenied) {
-          throw firestoreError;
-        }
-
-        // Fallback local para seguir editando aunque Firestore esté restringido.
-        localStorage.setItem(`fastpage_draft_${siteId}`, JSON.stringify(sitePayload));
-      }
-
+      await setDoc(doc(db, "cloned_sites", siteId), sitePayload);
       window.open(`/editor/${siteId}`, "_blank");
     } catch (e: any) {
-      setError(e.message || "No se pudo guardar el proyecto. Verifica tu sesión y permisos.");
+      const msg = String(e?.message || "");
+      const low = msg.toLowerCase();
+      if (low.includes("permission") || low.includes("insufficient")) {
+        setError("No tienes permisos para guardar en Firebase. Revisa reglas de Firestore para cloned_sites.");
+      } else {
+        setError(msg || "No se pudo guardar el proyecto. Verifica tu sesion y permisos.");
+      }
     } finally {
       setSavingToEditor(false);
     }
@@ -245,7 +250,7 @@ export default function WebClonerPage() {
               </div>
               <button
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-500 text-black font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-95 shadow-lg shadow-cyan-500/20"
-                disabled={!isValidUrl(url) || !html || savingToEditor}
+                disabled={!isValidUrl(url) || !html || savingToEditor || authLoading || !user?.uid}
                 onClick={handleOpenEditor}
                 aria-label="Abrir editor"
               >
@@ -320,7 +325,7 @@ export default function WebClonerPage() {
                         </div>
                         <button 
                           onClick={() => {
-                            window.open(`/api/sites/${site.id}`, "_blank");
+                            window.open(`/preview/${site.id}`, "_blank");
                           }}
                           className="flex items-center gap-2 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
                         >
@@ -338,6 +343,12 @@ export default function WebClonerPage() {
                 </div>
                 <h3 className="text-zinc-400 font-bold mb-1">No hay proyectos publicados</h3>
                 <p className="text-zinc-600 text-sm">Clona un sitio y dale a "Publicar" para que aparezca aquí.</p>
+              </div>
+            )}
+            {sitesError && (
+              <div className="mt-4 flex items-center gap-2 text-red-400">
+                <AlertCircle className="w-4 h-4" />
+                <span>{sitesError}</span>
               </div>
             )}
           </div>
