@@ -682,6 +682,71 @@ export default function StoreBuilderPage() {
                 <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">Tema actual</div>
                 <div className="mt-2 font-extrabold text-white">{theme.name}</div>
               </div>
+
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Personalizar colores (RGB)
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-xs text-zinc-400 font-bold">Accent</div>
+                  <div className="text-xs text-zinc-400 font-bold">R / G / B</div>
+                  <div className="text-xs text-zinc-400 font-bold text-right">Preview</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 items-center">
+                  <div className="text-sm font-bold text-white">Primario</div>
+                  <div className="flex items-center gap-2">
+                    {(["r", "g", "b"] as const).map((ch) => (
+                      <input
+                        key={`accent-${ch}`}
+                        type="number"
+                        min={0}
+                        max={255}
+                        value={getRgbValue("accent", ch)}
+                        onChange={(e) => updateRgb("accent", ch, e.target.value)}
+                        className="w-16 px-2 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold text-xs outline-none focus:border-emerald-500/40"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <span
+                      className="w-8 h-8 rounded-full border border-white/10"
+                      style={{
+                        background: `rgb(${getRgbValue("accent", "r")}, ${getRgbValue("accent", "g")}, ${getRgbValue("accent", "b")})`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 items-center">
+                  <div className="text-sm font-bold text-white">Secundario</div>
+                  <div className="flex items-center gap-2">
+                    {(["r", "g", "b"] as const).map((ch) => (
+                      <input
+                        key={`accent2-${ch}`}
+                        type="number"
+                        min={0}
+                        max={255}
+                        value={getRgbValue("accent2", ch)}
+                        onChange={(e) => updateRgb("accent2", ch, e.target.value)}
+                        className="w-16 px-2 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold text-xs outline-none focus:border-emerald-500/40"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <span
+                      className="w-8 h-8 rounded-full border border-white/10"
+                      style={{
+                        background: `rgb(${getRgbValue("accent2", "r")}, ${getRgbValue("accent2", "g")}, ${getRgbValue("accent2", "b")})`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={() => setConfig((c) => ({ ...c, customRgb: undefined }))}
+                  className="w-full px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-sm font-bold text-white hover:bg-white/10 transition-all"
+                >
+                  Usar colores del tema
+                </button>
+              </div>
             </div>
           )}
 
@@ -1095,6 +1160,65 @@ export default function StoreBuilderPage() {
                       </div>
                     </button>
                   ))}
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      RGB personalizado
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 items-center">
+                      <div className="text-sm font-bold text-white">Primario</div>
+                      <div className="flex items-center gap-2">
+                        {(["r", "g", "b"] as const).map((ch) => (
+                          <input
+                            key={`m-accent-${ch}`}
+                            type="number"
+                            min={0}
+                            max={255}
+                            value={getRgbValue("accent", ch)}
+                            onChange={(e) => updateRgb("accent", ch, e.target.value)}
+                            className="w-14 px-2 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold text-xs outline-none focus:border-emerald-500/40"
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-end">
+                        <span
+                          className="w-7 h-7 rounded-full border border-white/10"
+                          style={{
+                            background: `rgb(${getRgbValue("accent", "r")}, ${getRgbValue("accent", "g")}, ${getRgbValue("accent", "b")})`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 items-center">
+                      <div className="text-sm font-bold text-white">Secundario</div>
+                      <div className="flex items-center gap-2">
+                        {(["r", "g", "b"] as const).map((ch) => (
+                          <input
+                            key={`m-accent2-${ch}`}
+                            type="number"
+                            min={0}
+                            max={255}
+                            value={getRgbValue("accent2", ch)}
+                            onChange={(e) => updateRgb("accent2", ch, e.target.value)}
+                            className="w-14 px-2 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold text-xs outline-none focus:border-emerald-500/40"
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-end">
+                        <span
+                          className="w-7 h-7 rounded-full border border-white/10"
+                          style={{
+                            background: `rgb(${getRgbValue("accent2", "r")}, ${getRgbValue("accent2", "g")}, ${getRgbValue("accent2", "b")})`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setConfig((c) => ({ ...c, customRgb: undefined }))}
+                      className="w-full px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-sm font-bold text-white hover:bg-white/10 transition-all"
+                    >
+                      Usar colores del tema
+                    </button>
+                  </div>
                 </div>
               )}
 
