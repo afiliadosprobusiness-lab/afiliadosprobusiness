@@ -12,11 +12,13 @@ import {
   CheckCircle,
   DollarSign,
   Loader2,
+  Monitor,
   Palette,
   Plus,
   Rocket,
   Save,
   ShoppingCart,
+  Smartphone,
   Store,
   Trash2,
   X,
@@ -408,6 +410,36 @@ export default function StoreBuilderPage() {
                 Panel
               </button>
             )}
+
+            {!isMobileViewport && (
+              <div className="hidden md:flex items-center p-1 rounded-2xl bg-white/5 border border-white/10">
+                <button
+                  onClick={() => setViewMode("desktop")}
+                  className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
+                    viewMode === "desktop"
+                      ? "bg-white text-black"
+                      : "text-zinc-300 hover:text-white"
+                  }`}
+                  title="Modo PC"
+                >
+                  <Monitor className="w-4 h-4" />
+                  PC
+                </button>
+                <button
+                  onClick={() => setViewMode("mobile")}
+                  className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
+                    viewMode === "mobile"
+                      ? "bg-white text-black"
+                      : "text-zinc-300 hover:text-white"
+                  }`}
+                  title="Modo movil"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Movil
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => saveProject(false)}
               disabled={saving || loadingProject}
