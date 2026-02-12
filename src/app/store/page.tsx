@@ -623,12 +623,19 @@ export default function StoreBuilderPage() {
 
   const storefrontHtml = useMemo(() => {
     const id = projectId || "draft";
-    return generateStorefrontHtml({
-      storeId: id,
-      config,
-      products,
-      firebaseConfig: FIREBASE_PUBLIC_CONFIG,
-    });
+    try {
+      return generateStorefrontHtml({
+        storeId: id,
+        config,
+        products,
+        firebaseConfig: FIREBASE_PUBLIC_CONFIG,
+      });
+    } catch (e: any) {
+      // Don't let preview generation crash the whole editor.
+      console.error("[StoreBuilder] Preview generation failed:", e);
+      const msg = String(e?.message || "Error generando preview");
+      return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Preview error</title><style>body{margin:0;font-family:system-ui;background:#0b0b0f;color:#e5e7eb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px} .card{max-width:720px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:18px;padding:18px} b{display:block;margin-bottom:8px} code{white-space:pre-wrap;color:#a7f3d0}</style></head><body><div class="card"><b>No se pudo generar el preview</b><div style="color:#a1a1aa;font-weight:700">El editor sigue funcionando. Abre consola para mas detalle.</div><div style="margin-top:10px"><code>${msg.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></div></div></body></html>`;
+    }
   }, [projectId, config, products]);
 
   const updateContent = (patch: Partial<StoreConfig["content"]>) => {

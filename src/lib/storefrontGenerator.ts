@@ -156,115 +156,128 @@ function sanitizeRichText(input: string) {
     return escapeHtml(String(input || "").replace(/<[^>]*>/g, ""));
   }
 
-  const allowedTags = new Set(["SPAN", "B", "STRONG", "I", "EM", "U", "BR"]);
-  const allowedStyleProps = new Set([
-    "color",
-    "font-size",
-    "font-family",
-    "font-weight",
-    "letter-spacing",
-    "text-transform",
-    "text-decoration",
-    "font-style",
-    "line-height",
-  ]);
+  try {
+    const allowedTags = new Set(["SPAN", "B", "STRONG", "I", "EM", "U", "BR"]);
+    const allowedStyleProps = new Set([
+      "color",
+      "font-size",
+      "font-family",
+      "font-weight",
+      "letter-spacing",
+      "text-transform",
+      "text-decoration",
+      "font-style",
+      "line-height",
+    ]);
 
-  const isSafeStyleValue = (prop: string, valueRaw: string) => {
-    const value = String(valueRaw || "").trim();
-    if (!value) return false;
-    const lower = value.toLowerCase();
-    if (lower.includes("url(") || lower.includes("expression(")) return false;
+    const isSafeStyleValue = (prop: string, valueRaw: string) => {
+      const value = String(valueRaw || "").trim();
+      if (!value) return false;
+      const lower = value.toLowerCase();
+      if (lower.includes("url(") || lower.includes("expression(")) return false;
 
-    if (prop === "color") {
-      return (
-        /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ||
-        /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(value) ||
-        /^hsla?\(/i.test(value) ||
-        /^var\(--(accent|accent2)\)$/i.test(value) ||
-        /^(white|black|transparent|currentcolor)$/i.test(value)
-      );
-    }
-    if (prop === "font-size" || prop === "letter-spacing" || prop === "line-height") {
-      return /^-?\d+(\.\d+)?(px|rem|em|%)$/.test(value) || /^\d+(\.\d+)?$/.test(value);
-    }
-    if (prop === "font-family") {
-      return /^[a-z0-9\s,'"-]+$/i.test(value);
-    }
-    if (prop === "font-weight") {
-      return /^(normal|bold|bolder|lighter|[1-9]00)$/.test(lower);
-    }
-    if (prop === "text-transform") {
-      return /^(none|uppercase|lowercase|capitalize)$/.test(lower);
-    }
-    if (prop === "text-decoration") {
-      return /^(none|underline|line-through|overline)$/.test(lower);
-    }
-    if (prop === "font-style") {
-      return /^(normal|italic|oblique)$/.test(lower);
-    }
-    return false;
-  };
-
-  const cleanStyle = (styleAttr: string) => {
-    const pieces = String(styleAttr || "")
-      .split(";")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const kept: string[] = [];
-    for (const part of pieces) {
-      const idx = part.indexOf(":");
-      if (idx <= 0) continue;
-      const prop = part.slice(0, idx).trim().toLowerCase();
-      const value = part.slice(idx + 1).trim();
-      if (!allowedStyleProps.has(prop)) continue;
-      if (!isSafeStyleValue(prop, value)) continue;
-      kept.push(`${prop}:${value}`);
-    }
-    return kept.join(";");
-  };
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(String(input || ""), "text/html");
-
-  const walk = (node: Node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      if (!allowedTags.has(el.tagName)) {
-        const txt = doc.createTextNode(el.textContent || "");
-        el.replaceWith(txt);
-        return;
+      if (prop === "color") {
+        return (
+          /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ||
+          /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(
+            value,
+          ) ||
+          /^hsla?\(/i.test(value) ||
+          /^var\(--(accent|accent2)\)$/i.test(value) ||
+          /^(white|black|transparent|currentcolor)$/i.test(value)
+        );
       }
-      // Strip all attributes except a safe subset of style and a safe class.
-      const style = el.getAttribute("style") || "";
-      const cls = el.getAttribute("class") || "";
-      for (const attr of Array.from(el.attributes)) {
-        const n = attr.name.toLowerCase();
-        if (n === "style") continue;
-        if (n === "class") continue;
-        el.removeAttribute(attr.name);
+      if (
+        prop === "font-size" ||
+        prop === "letter-spacing" ||
+        prop === "line-height"
+      ) {
+        return (
+          /^-?\d+(\.\d+)?(px|rem|em|%)$/.test(value) ||
+          /^\d+(\.\d+)?$/.test(value)
+        );
       }
-      if (style) {
-        const cleaned = cleanStyle(style);
-        if (cleaned) el.setAttribute("style", cleaned);
-        else el.removeAttribute("style");
+      if (prop === "font-family") {
+        return /^[a-z0-9\s,'"-]+$/i.test(value);
       }
-      if (cls && el.tagName === "SPAN") {
-        const keep = cls
-          .split(/\s+/)
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .filter((c) => c === "fp-accent");
-        if (keep.length) el.setAttribute("class", keep.join(" "));
-        else el.removeAttribute("class");
-      } else {
-        el.removeAttribute("class");
+      if (prop === "font-weight") {
+        return /^(normal|bold|bolder|lighter|[1-9]00)$/.test(lower);
       }
-    }
-    for (const child of Array.from(node.childNodes)) walk(child);
-  };
-  walk(doc.body);
+      if (prop === "text-transform") {
+        return /^(none|uppercase|lowercase|capitalize)$/.test(lower);
+      }
+      if (prop === "text-decoration") {
+        return /^(none|underline|line-through|overline)$/.test(lower);
+      }
+      if (prop === "font-style") {
+        return /^(normal|italic|oblique)$/.test(lower);
+      }
+      return false;
+    };
 
-  return doc.body.innerHTML || "";
+    const cleanStyle = (styleAttr: string) => {
+      const pieces = String(styleAttr || "")
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const kept: string[] = [];
+      for (const part of pieces) {
+        const idx = part.indexOf(":");
+        if (idx <= 0) continue;
+        const prop = part.slice(0, idx).trim().toLowerCase();
+        const value = part.slice(idx + 1).trim();
+        if (!allowedStyleProps.has(prop)) continue;
+        if (!isSafeStyleValue(prop, value)) continue;
+        kept.push(`${prop}:${value}`);
+      }
+      return kept.join(";");
+    };
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(String(input || ""), "text/html");
+
+    const walk = (node: any) => {
+      // Avoid relying on global Node.
+      if (node && node.nodeType === 1) {
+        const el = node as HTMLElement;
+        if (!allowedTags.has(el.tagName)) {
+          const txt = doc.createTextNode(el.textContent || "");
+          el.replaceWith(txt);
+          return;
+        }
+        const style = el.getAttribute("style") || "";
+        const cls = el.getAttribute("class") || "";
+        for (const attr of Array.from(el.attributes)) {
+          const n = attr.name.toLowerCase();
+          if (n === "style" || n === "class") continue;
+          el.removeAttribute(attr.name);
+        }
+        if (style) {
+          const cleaned = cleanStyle(style);
+          if (cleaned) el.setAttribute("style", cleaned);
+          else el.removeAttribute("style");
+        }
+        if (cls && el.tagName === "SPAN") {
+          const keep = cls
+            .split(/\s+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .filter((c) => c === "fp-accent");
+          if (keep.length) el.setAttribute("class", keep.join(" "));
+          else el.removeAttribute("class");
+        } else {
+          el.removeAttribute("class");
+        }
+      }
+      const children = node?.childNodes ? Array.from(node.childNodes) : [];
+      for (const child of children) walk(child);
+    };
+    walk(doc.body);
+
+    return doc.body.innerHTML || "";
+  } catch {
+    return escapeHtml(String(input || "").replace(/<[^>]*>/g, ""));
+  }
 }
 
 function clamp(n: number, min: number, max: number) {
