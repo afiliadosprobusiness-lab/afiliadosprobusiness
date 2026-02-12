@@ -116,6 +116,312 @@ function hexToRgb(hex: string) {
   return { r: 0, g: 0, b: 0 };
 }
 
+function sanitizeRichTextClient(input: string) {
+  if (!input) return "";
+  if (!input.includes("<")) return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+    return input.replace(/<[^>]*>/g, "");
+  }
+
+  const allowedTags = new Set(["SPAN", "B", "STRONG", "I", "EM", "U", "BR"]);
+  const allowedStyleProps = new Set([
+    "color",
+    "font-size",
+    "font-family",
+    "font-weight",
+    "letter-spacing",
+    "text-transform",
+    "text-decoration",
+    "font-style",
+    "line-height",
+  ]);
+
+  const isSafeStyleValue = (prop: string, valueRaw: string) => {
+    const value = String(valueRaw || "").trim();
+    if (!value) return false;
+    const lower = value.toLowerCase();
+    if (lower.includes("url(") || lower.includes("expression(")) return false;
+
+    if (prop === "color") {
+      return (
+        /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ||
+        /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(value) ||
+        /^hsla?\(/i.test(value) ||
+        /^var\(--(accent|accent2)\)$/i.test(value) ||
+        /^(white|black|transparent|currentcolor)$/i.test(value)
+      );
+    }
+    if (prop === "font-size" || prop === "letter-spacing" || prop === "line-height") {
+      return /^-?\d+(\.\d+)?(px|rem|em|%)$/.test(value) || /^\d+(\.\d+)?$/.test(value);
+    }
+    if (prop === "font-family") {
+      return /^[a-z0-9\s,'"-]+$/i.test(value);
+    }
+    if (prop === "font-weight") {
+      return /^(normal|bold|bolder|lighter|[1-9]00)$/.test(lower);
+    }
+    if (prop === "text-transform") {
+      return /^(none|uppercase|lowercase|capitalize)$/.test(lower);
+    }
+    if (prop === "text-decoration") {
+      return /^(none|underline|line-through|overline)$/.test(lower);
+    }
+    if (prop === "font-style") {
+      return /^(normal|italic|oblique)$/.test(lower);
+    }
+    return false;
+  };
+
+  const cleanStyle = (styleAttr: string) => {
+    const pieces = String(styleAttr || "")
+      .split(";")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const kept: string[] = [];
+    for (const part of pieces) {
+      const idx = part.indexOf(":");
+      if (idx <= 0) continue;
+      const prop = part.slice(0, idx).trim().toLowerCase();
+      const value = part.slice(idx + 1).trim();
+      if (!allowedStyleProps.has(prop)) continue;
+      if (!isSafeStyleValue(prop, value)) continue;
+      kept.push(`${prop}:${value}`);
+    }
+    return kept.join(";");
+  };
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(String(input || ""), "text/html");
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      if (!allowedTags.has(el.tagName)) {
+        const txt = doc.createTextNode(el.textContent || "");
+        el.replaceWith(txt);
+        return;
+      }
+      const style = el.getAttribute("style") || "";
+      const cls = el.getAttribute("class") || "";
+      for (const attr of Array.from(el.attributes)) {
+        const n = attr.name.toLowerCase();
+        if (n === "style" || n === "class") continue;
+        el.removeAttribute(attr.name);
+      }
+      if (style) {
+        const cleaned = cleanStyle(style);
+        if (cleaned) el.setAttribute("style", cleaned);
+        else el.removeAttribute("style");
+      }
+      if (cls && el.tagName === "SPAN") {
+        const keep = cls
+          .split(/\s+/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .filter((c) => c === "fp-accent");
+        if (keep.length) el.setAttribute("class", keep.join(" "));
+        else el.removeAttribute("class");
+      } else {
+        el.removeAttribute("class");
+      }
+    }
+    for (const child of Array.from(node.childNodes)) walk(child);
+  };
+  walk(doc.body);
+  return doc.body.innerHTML || "";
+}
+
+function applyInlineStyleToSelection(root: HTMLElement, style: Record<string, string>) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return false;
+  const range = sel.getRangeAt(0);
+  const anchor = sel.anchorNode;
+  const focus = sel.focusNode;
+  if (!anchor || !focus) return false;
+  if (!root.contains(anchor) || !root.contains(focus)) return false;
+  if (range.collapsed) return false;
+
+  const span = document.createElement("span");
+  for (const [k, v] of Object.entries(style)) {
+    span.style.setProperty(k, v);
+  }
+  span.appendChild(range.extractContents());
+  range.insertNode(span);
+  sel.removeAllRanges();
+  const next = document.createRange();
+  next.selectNodeContents(span);
+  sel.addRange(next);
+  return true;
+}
+
+function wrapSelectionWithTag(root: HTMLElement, tagName: "strong" | "em" | "u" | "span", className?: string) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return false;
+  const range = sel.getRangeAt(0);
+  const anchor = sel.anchorNode;
+  const focus = sel.focusNode;
+  if (!anchor || !focus) return false;
+  if (!root.contains(anchor) || !root.contains(focus)) return false;
+  if (range.collapsed) return false;
+
+  const el = document.createElement(tagName);
+  if (className && tagName === "span") el.className = className;
+  el.appendChild(range.extractContents());
+  range.insertNode(el);
+  sel.removeAllRanges();
+  const next = document.createRange();
+  next.selectNodeContents(el);
+  sel.addRange(next);
+  return true;
+}
+
+function RichTextField(props: {
+  label: string;
+  value: string;
+  onChange: (nextHtml: string) => void;
+  placeholder?: string;
+  minHeightClass?: string;
+}) {
+  const { label, value, onChange, placeholder, minHeightClass } = props;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [color, setColor] = useState("#ffffff");
+  const [fontSize, setFontSize] = useState("16px");
+  const [fontFamily, setFontFamily] = useState("'Plus Jakarta Sans', system-ui");
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (document.activeElement === el) return;
+    el.innerHTML = value || "";
+  }, [value]);
+
+  const commit = () => {
+    const el = ref.current;
+    if (!el) return;
+    onChange(sanitizeRichTextClient(el.innerHTML || ""));
+  };
+
+  const apply = (fn: (root: HTMLElement) => boolean) => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    const ok = fn(el);
+    if (ok) commit();
+  };
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+      <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+        {label}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => apply((root) => wrapSelectionWithTag(root, "strong"))}
+          className="px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-extrabold hover:bg-white/5"
+          title="Negrita"
+        >
+          B
+        </button>
+        <button
+          type="button"
+          onClick={() => apply((root) => wrapSelectionWithTag(root, "em"))}
+          className="px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-extrabold hover:bg-white/5"
+          title="Italica"
+        >
+          I
+        </button>
+        <button
+          type="button"
+          onClick={() => apply((root) => wrapSelectionWithTag(root, "u"))}
+          className="px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-extrabold hover:bg-white/5"
+          title="Subrayado"
+        >
+          U
+        </button>
+        <button
+          type="button"
+          onClick={() => apply((root) => wrapSelectionWithTag(root, "span", "fp-accent"))}
+          className="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-200 text-xs font-extrabold hover:bg-emerald-500/20"
+          title="Accent (degradado)"
+        >
+          Accent
+        </button>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/30 border border-white/10">
+          <span className="text-xs font-extrabold text-zinc-400">Color</span>
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => {
+              setColor(e.target.value);
+              apply((root) => applyInlineStyleToSelection(root, { color: e.target.value }));
+            }}
+            className="w-8 h-6 bg-transparent border-none p-0"
+            aria-label="Color"
+          />
+        </div>
+        <select
+          value={fontSize}
+          onChange={(e) => {
+            setFontSize(e.target.value);
+            apply((root) => applyInlineStyleToSelection(root, { "font-size": e.target.value }));
+          }}
+          className="px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-extrabold outline-none"
+          aria-label="Tamano"
+        >
+          {["12px", "14px", "16px", "18px", "22px", "28px", "34px", "42px"].map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <select
+          value={fontFamily}
+          onChange={(e) => {
+            setFontFamily(e.target.value);
+            apply((root) => applyInlineStyleToSelection(root, { "font-family": e.target.value }));
+          }}
+          className="px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-extrabold outline-none"
+          aria-label="Fuente"
+        >
+          <option value="'Plus Jakarta Sans', system-ui">Jakarta</option>
+          <option value="Poppins, system-ui">Poppins</option>
+          <option value="Montserrat, system-ui">Montserrat</option>
+          <option value="'Playfair Display', serif">Playfair</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            const el = ref.current;
+            if (!el) return;
+            const txt = el.textContent || "";
+            el.innerHTML = txt.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+            commit();
+          }}
+          className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-extrabold hover:bg-white/10"
+          title="Quitar formato"
+        >
+          Reset
+        </button>
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={commit}
+        onBlur={commit}
+        data-placeholder={placeholder || ""}
+        className={`w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40 ${minHeightClass || "min-h-[70px]"}`}
+        style={{ whiteSpace: "pre-wrap" }}
+      />
+      {placeholder ? (
+        <p className="text-xs text-zinc-500">
+          Tip: Selecciona palabras dentro del texto para cambiar color, tamano o fuente.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 type ProductDraft = {
   id?: string;
   name: string;
@@ -139,21 +445,32 @@ const DEFAULT_CONFIG: StoreConfig = {
   },
   content: {
     kicker: "Ecommerce Deluxe",
+    kickerHtml: "Ecommerce Deluxe",
     heroTitle: "Tu tienda lista para",
     heroAccent: "vender hoy",
+    heroHeadlineHtml:
+      'Tu tienda lista para <span class="fp-accent">vender hoy</span>.',
     heroSubtitle:
+      "Productos, carrito y checkout dentro de una experiencia rapida y premium. Disenada para convertir en movil y escritorio.",
+    heroSubtitleHtml:
       "Productos, carrito y checkout dentro de una experiencia rapida y premium. Disenada para convertir en movil y escritorio.",
     heroPrimaryButton: "Explorar productos",
     heroSecondaryButton: "Ver carrito",
     productsTitle: "Productos destacados",
     productsSubtitle: "Todo lo que agregues aqui aparecera debajo del hero.",
+    productsTitleHtml: "Productos destacados",
+    productsSubtitleHtml:
+      "Todo lo que agregues aqui aparecera debajo del hero.",
     tipText:
+      "Tip: Puedes publicar tu tienda y recibir pedidos desde cualquier dispositivo.",
+    tipTextHtml:
       "Tip: Puedes publicar tu tienda y recibir pedidos desde cualquier dispositivo.",
     cartLabel: "Carrito",
     checkoutTitle: "Checkout",
     checkoutButton: "Finalizar compra",
     continueButton: "Seguir comprando",
     footerLeft: "Publicado con Fast Page",
+    footerLeftHtml: "Publicado con Fast Page",
   },
   features: [
     { title: "Carrito inteligente", subtitle: "Persistente y rapido" },
@@ -225,6 +542,7 @@ export default function StoreBuilderPage() {
   });
 
   const hydratedRef = useRef(false);
+  const previewIframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -287,6 +605,21 @@ export default function StoreBuilderPage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (viewMode !== "mobile") return;
+    const iframe = previewIframeRef.current;
+    if (!iframe) return;
+    const t = setTimeout(() => {
+      try {
+        iframe.contentWindow?.scrollTo(0, 0);
+      } catch {
+        // ignore
+      }
+    }, 50);
+    return () => clearTimeout(t);
+  }, [viewMode, projectId]);
 
   const storefrontHtml = useMemo(() => {
     const id = projectId || "draft";
@@ -752,42 +1085,43 @@ export default function StoreBuilderPage() {
 
           {activePanel === "content" && (
             <div className="space-y-4">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
-                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Hero
-                </div>
-                <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Kicker
-                </label>
-                <input
-                  value={config.content?.kicker || ""}
-                  onChange={(e) => updateContent({ kicker: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+              <div className="space-y-3">
+                <RichTextField
+                  label="Hero: Kicker"
+                  value={config.content?.kickerHtml || config.content?.kicker || ""}
+                  onChange={(html) =>
+                    updateContent({
+                      kickerHtml: html,
+                      kicker: html.replace(/<[^>]*>/g, ""),
+                    })
+                  }
+                  placeholder="Ecommerce Deluxe"
+                  minHeightClass="min-h-[56px]"
                 />
-                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Titulo
-                </label>
-                <input
-                  value={config.content?.heroTitle || ""}
-                  onChange={(e) => updateContent({ heroTitle: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+
+                <RichTextField
+                  label="Hero: Titular (por palabra)"
+                  value={config.content?.heroHeadlineHtml || ""}
+                  onChange={(html) =>
+                    updateContent({ heroHeadlineHtml: html })
+                  }
+                  placeholder='Tu tienda lista para <span class="fp-accent">vender hoy</span>.'
+                  minHeightClass="min-h-[88px]"
                 />
-                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Palabra destaque
-                </label>
-                <input
-                  value={config.content?.heroAccent || ""}
-                  onChange={(e) => updateContent({ heroAccent: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+
+                <RichTextField
+                  label="Hero: Subtitulo (por palabra)"
+                  value={config.content?.heroSubtitleHtml || config.content?.heroSubtitle || ""}
+                  onChange={(html) =>
+                    updateContent({
+                      heroSubtitleHtml: html,
+                      heroSubtitle: html.replace(/<[^>]*>/g, ""),
+                    })
+                  }
+                  placeholder="Productos, carrito y checkout..."
+                  minHeightClass="min-h-[120px]"
                 />
-                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Subtitulo
-                </label>
-                <textarea
-                  value={config.content?.heroSubtitle || ""}
-                  onChange={(e) => updateContent({ heroSubtitle: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40 min-h-[100px]"
-                />
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
@@ -816,27 +1150,31 @@ export default function StoreBuilderPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
-                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Seccion productos
-                </div>
-                <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Titulo
-                </label>
-                <input
-                  value={config.content?.productsTitle || ""}
-                  onChange={(e) => updateContent({ productsTitle: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
-                />
-                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Subtitulo
-                </label>
-                <input
-                  value={config.content?.productsSubtitle || ""}
-                  onChange={(e) =>
-                    updateContent({ productsSubtitle: e.target.value })
+              <div className="space-y-3">
+                <RichTextField
+                  label="Seccion productos: Titulo (por palabra)"
+                  value={config.content?.productsTitleHtml || config.content?.productsTitle || ""}
+                  onChange={(html) =>
+                    updateContent({
+                      productsTitleHtml: html,
+                      productsTitle: html.replace(/<[^>]*>/g, ""),
+                    })
                   }
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                  placeholder="Productos destacados"
+                  minHeightClass="min-h-[60px]"
+                />
+
+                <RichTextField
+                  label="Seccion productos: Subtitulo (por palabra)"
+                  value={config.content?.productsSubtitleHtml || config.content?.productsSubtitle || ""}
+                  onChange={(html) =>
+                    updateContent({
+                      productsSubtitleHtml: html,
+                      productsSubtitle: html.replace(/<[^>]*>/g, ""),
+                    })
+                  }
+                  placeholder="Todo lo que agregues aqui aparecera debajo del hero."
+                  minHeightClass="min-h-[70px]"
                 />
               </div>
 
@@ -946,21 +1284,29 @@ export default function StoreBuilderPage() {
                     />
                   </div>
                 </div>
-                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Tip
-                </label>
-                <input
-                  value={config.content?.tipText || ""}
-                  onChange={(e) => updateContent({ tipText: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                <RichTextField
+                  label="Tip (por palabra)"
+                  value={config.content?.tipTextHtml || config.content?.tipText || ""}
+                  onChange={(html) =>
+                    updateContent({
+                      tipTextHtml: html,
+                      tipText: html.replace(/<[^>]*>/g, ""),
+                    })
+                  }
+                  placeholder="Tip: ..."
+                  minHeightClass="min-h-[64px]"
                 />
-                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                  Footer izquierda
-                </label>
-                <input
-                  value={config.content?.footerLeft || ""}
-                  onChange={(e) => updateContent({ footerLeft: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                <RichTextField
+                  label="Footer izquierda (por palabra)"
+                  value={config.content?.footerLeftHtml || config.content?.footerLeft || ""}
+                  onChange={(html) =>
+                    updateContent({
+                      footerLeftHtml: html,
+                      footerLeft: html.replace(/<[^>]*>/g, ""),
+                    })
+                  }
+                  placeholder="Publicado con Fast Page"
+                  minHeightClass="min-h-[56px]"
                 />
               </div>
             </div>
@@ -1037,6 +1383,7 @@ export default function StoreBuilderPage() {
               </div>
             ) : (
               <iframe
+                ref={previewIframeRef}
                 title="Storefront Preview"
                 className="w-full h-full border-none rounded-[inherit]"
                 sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"
@@ -1224,39 +1571,41 @@ export default function StoreBuilderPage() {
 
               {activePanel === "content" && (
                 <div className="space-y-3">
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
-                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Kicker
-                    </label>
-                    <input
-                      value={config.content?.kicker || ""}
-                      onChange={(e) => updateContent({ kicker: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                  <div className="space-y-3">
+                    <RichTextField
+                      label="Hero: Kicker"
+                      value={config.content?.kickerHtml || config.content?.kicker || ""}
+                      onChange={(html) =>
+                        updateContent({
+                          kickerHtml: html,
+                          kicker: html.replace(/<[^>]*>/g, ""),
+                        })
+                      }
+                      placeholder="Ecommerce Deluxe"
+                      minHeightClass="min-h-[56px]"
                     />
-                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Titulo
-                    </label>
-                    <input
-                      value={config.content?.heroTitle || ""}
-                      onChange={(e) => updateContent({ heroTitle: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+
+                    <RichTextField
+                      label="Hero: Titular (por palabra)"
+                      value={config.content?.heroHeadlineHtml || ""}
+                      onChange={(html) => updateContent({ heroHeadlineHtml: html })}
+                      placeholder='Tu tienda lista para <span class="fp-accent">vender hoy</span>.'
+                      minHeightClass="min-h-[92px]"
                     />
-                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Palabra destaque
-                    </label>
-                    <input
-                      value={config.content?.heroAccent || ""}
-                      onChange={(e) => updateContent({ heroAccent: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+
+                    <RichTextField
+                      label="Hero: Subtitulo (por palabra)"
+                      value={config.content?.heroSubtitleHtml || config.content?.heroSubtitle || ""}
+                      onChange={(html) =>
+                        updateContent({
+                          heroSubtitleHtml: html,
+                          heroSubtitle: html.replace(/<[^>]*>/g, ""),
+                        })
+                      }
+                      placeholder="Productos, carrito y checkout..."
+                      minHeightClass="min-h-[120px]"
                     />
-                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Subtitulo
-                    </label>
-                    <textarea
-                      value={config.content?.heroSubtitle || ""}
-                      onChange={(e) => updateContent({ heroSubtitle: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40 min-h-[100px]"
-                    />
+
                     <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
                       Boton principal
                     </label>
@@ -1279,24 +1628,30 @@ export default function StoreBuilderPage() {
                     />
                   </div>
 
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
-                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Titulo productos
-                    </label>
-                    <input
-                      value={config.content?.productsTitle || ""}
-                      onChange={(e) => updateContent({ productsTitle: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
-                    />
-                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Subtitulo productos
-                    </label>
-                    <input
-                      value={config.content?.productsSubtitle || ""}
-                      onChange={(e) =>
-                        updateContent({ productsSubtitle: e.target.value })
+                  <div className="space-y-3">
+                    <RichTextField
+                      label="Productos: Titulo (por palabra)"
+                      value={config.content?.productsTitleHtml || config.content?.productsTitle || ""}
+                      onChange={(html) =>
+                        updateContent({
+                          productsTitleHtml: html,
+                          productsTitle: html.replace(/<[^>]*>/g, ""),
+                        })
                       }
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                      placeholder="Productos destacados"
+                      minHeightClass="min-h-[60px]"
+                    />
+                    <RichTextField
+                      label="Productos: Subtitulo (por palabra)"
+                      value={config.content?.productsSubtitleHtml || config.content?.productsSubtitle || ""}
+                      onChange={(html) =>
+                        updateContent({
+                          productsSubtitleHtml: html,
+                          productsSubtitle: html.replace(/<[^>]*>/g, ""),
+                        })
+                      }
+                      placeholder="Todo lo que agregues aqui aparecera debajo del hero."
+                      minHeightClass="min-h-[70px]"
                     />
                   </div>
 
@@ -1391,21 +1746,29 @@ export default function StoreBuilderPage() {
                       }
                       className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
                     />
-                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Tip
-                    </label>
-                    <input
-                      value={config.content?.tipText || ""}
-                      onChange={(e) => updateContent({ tipText: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    <RichTextField
+                      label="Tip (por palabra)"
+                      value={config.content?.tipTextHtml || config.content?.tipText || ""}
+                      onChange={(html) =>
+                        updateContent({
+                          tipTextHtml: html,
+                          tipText: html.replace(/<[^>]*>/g, ""),
+                        })
+                      }
+                      placeholder="Tip: ..."
+                      minHeightClass="min-h-[64px]"
                     />
-                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
-                      Footer izquierda
-                    </label>
-                    <input
-                      value={config.content?.footerLeft || ""}
-                      onChange={(e) => updateContent({ footerLeft: e.target.value })}
-                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    <RichTextField
+                      label="Footer izquierda (por palabra)"
+                      value={config.content?.footerLeftHtml || config.content?.footerLeft || ""}
+                      onChange={(html) =>
+                        updateContent({
+                          footerLeftHtml: html,
+                          footerLeft: html.replace(/<[^>]*>/g, ""),
+                        })
+                      }
+                      placeholder="Publicado con Fast Page"
+                      minHeightClass="min-h-[56px]"
                     />
                   </div>
                 </div>

@@ -51,19 +51,26 @@ export type StoreConfig = {
   // Content (editable)
   content?: {
     kicker?: string;
+    kickerHtml?: string;
     heroTitle?: string;
     heroAccent?: string;
     heroSubtitle?: string;
+    heroHeadlineHtml?: string;
+    heroSubtitleHtml?: string;
     heroPrimaryButton?: string;
     heroSecondaryButton?: string;
     productsTitle?: string;
     productsSubtitle?: string;
+    productsTitleHtml?: string;
+    productsSubtitleHtml?: string;
     tipText?: string;
+    tipTextHtml?: string;
     cartLabel?: string;
     checkoutTitle?: string;
     checkoutButton?: string;
     continueButton?: string;
     footerLeft?: string;
+    footerLeftHtml?: string;
   };
 
   features?: StoreFeature[];
@@ -141,6 +148,125 @@ function escapeHtml(input: string) {
     .replaceAll("'", "&#039;");
 }
 
+function sanitizeRichText(input: string) {
+  // If there's no tag-like content, keep it simple and fully escape.
+  if (!input || !input.includes("<")) return escapeHtml(String(input || ""));
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+    // Best-effort fallback: strip tags.
+    return escapeHtml(String(input || "").replace(/<[^>]*>/g, ""));
+  }
+
+  const allowedTags = new Set(["SPAN", "B", "STRONG", "I", "EM", "U", "BR"]);
+  const allowedStyleProps = new Set([
+    "color",
+    "font-size",
+    "font-family",
+    "font-weight",
+    "letter-spacing",
+    "text-transform",
+    "text-decoration",
+    "font-style",
+    "line-height",
+  ]);
+
+  const isSafeStyleValue = (prop: string, valueRaw: string) => {
+    const value = String(valueRaw || "").trim();
+    if (!value) return false;
+    const lower = value.toLowerCase();
+    if (lower.includes("url(") || lower.includes("expression(")) return false;
+
+    if (prop === "color") {
+      return (
+        /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ||
+        /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(value) ||
+        /^hsla?\(/i.test(value) ||
+        /^var\(--(accent|accent2)\)$/i.test(value) ||
+        /^(white|black|transparent|currentcolor)$/i.test(value)
+      );
+    }
+    if (prop === "font-size" || prop === "letter-spacing" || prop === "line-height") {
+      return /^-?\d+(\.\d+)?(px|rem|em|%)$/.test(value) || /^\d+(\.\d+)?$/.test(value);
+    }
+    if (prop === "font-family") {
+      return /^[a-z0-9\s,'"-]+$/i.test(value);
+    }
+    if (prop === "font-weight") {
+      return /^(normal|bold|bolder|lighter|[1-9]00)$/.test(lower);
+    }
+    if (prop === "text-transform") {
+      return /^(none|uppercase|lowercase|capitalize)$/.test(lower);
+    }
+    if (prop === "text-decoration") {
+      return /^(none|underline|line-through|overline)$/.test(lower);
+    }
+    if (prop === "font-style") {
+      return /^(normal|italic|oblique)$/.test(lower);
+    }
+    return false;
+  };
+
+  const cleanStyle = (styleAttr: string) => {
+    const pieces = String(styleAttr || "")
+      .split(";")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const kept: string[] = [];
+    for (const part of pieces) {
+      const idx = part.indexOf(":");
+      if (idx <= 0) continue;
+      const prop = part.slice(0, idx).trim().toLowerCase();
+      const value = part.slice(idx + 1).trim();
+      if (!allowedStyleProps.has(prop)) continue;
+      if (!isSafeStyleValue(prop, value)) continue;
+      kept.push(`${prop}:${value}`);
+    }
+    return kept.join(";");
+  };
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(String(input || ""), "text/html");
+
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      if (!allowedTags.has(el.tagName)) {
+        const txt = doc.createTextNode(el.textContent || "");
+        el.replaceWith(txt);
+        return;
+      }
+      // Strip all attributes except a safe subset of style and a safe class.
+      const style = el.getAttribute("style") || "";
+      const cls = el.getAttribute("class") || "";
+      for (const attr of Array.from(el.attributes)) {
+        const n = attr.name.toLowerCase();
+        if (n === "style") continue;
+        if (n === "class") continue;
+        el.removeAttribute(attr.name);
+      }
+      if (style) {
+        const cleaned = cleanStyle(style);
+        if (cleaned) el.setAttribute("style", cleaned);
+        else el.removeAttribute("style");
+      }
+      if (cls && el.tagName === "SPAN") {
+        const keep = cls
+          .split(/\s+/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .filter((c) => c === "fp-accent");
+        if (keep.length) el.setAttribute("class", keep.join(" "));
+        else el.removeAttribute("class");
+      } else {
+        el.removeAttribute("class");
+      }
+    }
+    for (const child of Array.from(node.childNodes)) walk(child);
+  };
+  walk(doc.body);
+
+  return doc.body.innerHTML || "";
+}
+
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
@@ -186,28 +312,36 @@ export function generateStorefrontHtml(args: {
   const primaryCta = escapeHtml(args.config.primaryCta || "Comprar ahora");
 
   const content = args.config.content || {};
-  const kicker = escapeHtml(content.kicker || "Ecommerce Deluxe");
-  const heroTitle = escapeHtml(content.heroTitle || "Tu tienda lista para");
-  const heroAccent = escapeHtml(content.heroAccent || "vender hoy");
-  const heroSubtitle = escapeHtml(
-    content.heroSubtitle ||
+  const kicker = sanitizeRichText(content.kickerHtml || content.kicker || "Ecommerce Deluxe");
+  const heroHeadlineHtml = sanitizeRichText(
+    content.heroHeadlineHtml ||
+      `Tu tienda lista para <span class="fp-accent">vender hoy</span>.`,
+  );
+  const heroSubtitle = sanitizeRichText(
+    content.heroSubtitleHtml ||
+      content.heroSubtitle ||
       "Productos, carrito y checkout dentro de una experiencia rapida y premium. Disenada para convertir en movil y escritorio.",
   );
   const heroPrimaryButton = escapeHtml(content.heroPrimaryButton || "Explorar productos");
   const heroSecondaryButton = escapeHtml(content.heroSecondaryButton || "Ver carrito");
-  const productsTitle = escapeHtml(content.productsTitle || "Productos destacados");
-  const productsSubtitle = escapeHtml(
-    content.productsSubtitle || "Todo lo que agregues aqui aparecera debajo del hero."
+  const productsTitle = sanitizeRichText(
+    content.productsTitleHtml || content.productsTitle || "Productos destacados",
   );
-  const tipText = escapeHtml(
-    content.tipText ||
+  const productsSubtitle = sanitizeRichText(
+    content.productsSubtitleHtml ||
+      content.productsSubtitle ||
+      "Todo lo que agregues aqui aparecera debajo del hero.",
+  );
+  const tipText = sanitizeRichText(
+    content.tipTextHtml ||
+      content.tipText ||
       "Tip: Puedes publicar tu tienda y recibir pedidos desde cualquier dispositivo.",
   );
   const cartLabel = escapeHtml(content.cartLabel || "Carrito");
   const checkoutTitle = escapeHtml(content.checkoutTitle || "Checkout");
   const checkoutButton = escapeHtml(content.checkoutButton || "Finalizar compra");
   const continueButton = escapeHtml(content.continueButton || "Seguir comprando");
-  const footerLeft = escapeHtml(content.footerLeft || "Publicado con Fast Page");
+  const footerLeft = sanitizeRichText(content.footerLeftHtml || content.footerLeft || "Publicado con Fast Page");
 
   const features: StoreFeature[] =
     Array.isArray(args.config.features) && args.config.features.length
@@ -268,7 +402,7 @@ export function generateStorefrontHtml(args: {
     <title>${safeName} | Fast Page</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Montserrat:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&family=Playfair+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
       :root{--accent:${accent};--accent2:${accent2};--bg:${theme.surface};--surface:${theme.surface2};--text:${theme.text};--muted:${theme.muted};--r:${theme.radius}px;--shadow:0 20px 70px rgba(0,0,0,.55)}
       *{box-sizing:border-box}
@@ -292,9 +426,12 @@ export function generateStorefrontHtml(args: {
       .hero-inner{padding:26px 18px 18px;display:grid;grid-template-columns:1.3fr .9fr;gap:18px;align-items:center}
       .tag{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.15);padding:8px 12px;border-radius:999px;font-weight:900;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb, var(--accent) 70%, white)}
       .hero h2{margin:14px 0 10px;font-size:42px;line-height:1.05;letter-spacing:-.02em}
-      .hero h2 span{background:linear-gradient(90deg,var(--accent),var(--accent2),#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
+      .hero h2 .fp-accent{background:linear-gradient(90deg,var(--accent),var(--accent2),#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
       .hero p{margin:0;color:var(--muted);font-size:15px;line-height:1.55;max-width:52ch}
       .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+      .section-head{margin-top:22px;margin-bottom:12px}
+      .section-head h3{margin:0;font-size:22px;letter-spacing:-.01em}
+      .section-head p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.5;max-width:70ch}
       .hero-card{border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18);border-radius:calc(var(--r) + 8px);padding:16px}
       .stat{display:flex;gap:10px;align-items:center;margin-bottom:10px}
       .dot{width:10px;height:10px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent)}
@@ -354,10 +491,11 @@ export function generateStorefrontHtml(args: {
       .mobile-frame{display:none}
       @media (max-width:920px){.hero-inner{grid-template-columns:1fr}.hero h2{font-size:34px}.grid{grid-template-columns:repeat(2, 1fr)}}
       @media (max-width:560px){
+        .wrap{position:relative;z-index:2}
         .grid{grid-template-columns:1fr}
         .topbar-inner{padding:12px 14px}
-        .mobile-glow{display:block;position:fixed;left:-10%;right:-10%;bottom:-40px;height:220px;pointer-events:none;z-index:0;filter:blur(0px);background:radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),radial-gradient(55% 70% at 70% 0%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 70%)}
-        .mobile-frame{display:block;position:fixed;left:14px;right:14px;bottom:10px;height:54px;border-radius:28px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 20%, transparent), transparent);pointer-events:none;z-index:1}
+        .mobile-glow{display:block;position:fixed;left:-10%;right:-10%;bottom:-40px;height:220px;pointer-events:none;z-index:1;filter:blur(0px);background:radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),radial-gradient(55% 70% at 70% 0%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 70%)}
+        .mobile-frame{display:block;position:fixed;left:14px;right:14px;bottom:10px;height:54px;border-radius:28px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent);pointer-events:none;z-index:1}
       }
     </style>
   </head>
@@ -374,11 +512,11 @@ export function generateStorefrontHtml(args: {
     </div>
 
     <div class="wrap">
-      <section class="hero"><div class="hero-inner"><div><span class="tag">${kicker}</span><h2>${heroTitle} <span>${heroAccent}</span>.</h2><p>${heroSubtitle}</p><div class="hero-actions"><button class="btn primary" id="btnHeroShop" type="button">${heroPrimaryButton}</button><button class="btn" id="btnHeroCart" type="button">${heroSecondaryButton}</button></div></div><div class="hero-card">${features
+      <section class="hero"><div class="hero-inner"><div><span class="tag">${kicker}</span><h2>${heroHeadlineHtml}</h2><p>${heroSubtitle}</p><div class="hero-actions"><button class="btn primary" id="btnHeroShop" type="button">${heroPrimaryButton}</button><button class="btn" id="btnHeroCart" type="button">${heroSecondaryButton}</button></div></div><div class="hero-card">${features
         .slice(0, 6)
         .map((f, i) => {
-          const title = escapeHtml(String(f?.title || ""));
-          const subtitle = escapeHtml(String(f?.subtitle || ""));
+          const title = sanitizeRichText(String(f?.title || ""));
+          const subtitle = sanitizeRichText(String(f?.subtitle || ""));
           const dotColor = f?.color ? String(f.color) : i === 0 ? "var(--accent)" : i === 1 ? "var(--accent2)" : "#a78bfa";
           const dotStyle = dotColor ? ` style="background:${escapeHtml(dotColor)}"` : "";
           return `<div class="stat"><span class="dot"${dotStyle}></span><div><b>${title || "Beneficio"}</b><small>${subtitle || "Descripcion"}</small></div></div>`;
