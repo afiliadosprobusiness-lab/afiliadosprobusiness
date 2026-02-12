@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/firebase";
+import { doc as firestoreDoc, setDoc } from "firebase/firestore";
+import { injectMetricsTracking } from "@/lib/metricsTracking";
+import MobileSavePublishBar from "@/components/MobileSavePublishBar";
+import PublishSuccessModal from "@/components/PublishSuccessModal";
 import { 
   Plus, 
   Trash2, 
@@ -23,7 +29,10 @@ import {
   Check,
   Play,
   ArrowRight,
-  Copy
+  Copy,
+  Rocket,
+  PanelLeft,
+  X
 } from "lucide-react";
 
 type BlockType = "hero" | "features" | "cta" | "pricing" | "testimonials" | "faq" | "footer";
@@ -86,11 +95,21 @@ const DEFAULT_BLOCKS: Record<BlockType, any> = {
 export default function BuilderPage() {
   const { user, loading } = useAuth(true);
   const { t } = useLanguage();
+  const router = useRouter();
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
   const [activeTab, setActiveTab] = useState<"add" | "styles">("add");
   const [showExportModal, setShowExportModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
+  const [publishingProject, setPublishingProject] = useState(false);
+  const [builderProjectId, setBuilderProjectId] = useState<string | null>(null);
+  const [projectStatus, setProjectStatus] = useState<"saved" | "dirty">("saved");
+  const [showPublished, setShowPublished] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [projectError, setProjectError] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [isClient, setIsClient] = useState(false);
   const [primaryColor, setPrimaryColor] = useState("#fbbf24");
@@ -113,6 +132,22 @@ export default function BuilderPage() {
     if (savedColor) setPrimaryColor(savedColor);
     const savedSecondary = localStorage.getItem("fastpage_builder_secondary_color");
     if (savedSecondary) setSecondaryColor(savedSecondary);
+    const savedProjectId = localStorage.getItem("fastpage_builder_project_id");
+    if (savedProjectId) setBuilderProjectId(savedProjectId);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 1023px)");
+    const syncViewport = () => {
+      const mobile = media.matches;
+      setIsMobileViewport(mobile);
+      if (mobile) setViewMode("mobile");
+      if (!mobile) setIsMobileMenuOpen(false);
+    };
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+    return () => media.removeEventListener("change", syncViewport);
   }, []);
 
   useEffect(() => {
@@ -121,6 +156,11 @@ export default function BuilderPage() {
       localStorage.setItem("fastpage_builder_secondary_color", secondaryColor);
     }
   }, [primaryColor, secondaryColor, isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    setProjectStatus("dirty");
+  }, [blocks, primaryColor, secondaryColor, isClient]);
 
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -193,15 +233,17 @@ export default function BuilderPage() {
       localStorage.removeItem("fastpage_builder_draft");
       localStorage.removeItem("fastpage_builder_primary_color");
       localStorage.removeItem("fastpage_builder_secondary_color");
+      localStorage.removeItem("fastpage_builder_project_id");
+      setBuilderProjectId(null);
       setPrimaryColor("#fbbf24");
       setSecondaryColor("#d97706");
+      setProjectStatus("saved");
     }
   };
 
-  const exportHtml = () => {
-    setSaving(true);
+  const serializeBuilderHtml = () => {
     const previewElement = document.getElementById("builder-preview-content");
-    if (!previewElement) return;
+    if (!previewElement) return null;
 
     // Clone to remove editor-only elements
     const clone = previewElement.cloneNode(true) as HTMLElement;
@@ -240,6 +282,87 @@ export default function BuilderPage() {
 </body>
 </html>`;
 
+    return fullHtml;
+  };
+
+  const upsertBuilderProject = async (publishNow: boolean) => {
+    if (!user?.uid) {
+      throw new Error("Debes iniciar sesion para guardar o publicar.");
+    }
+    const fullHtml = serializeBuilderHtml();
+    if (!fullHtml) {
+      throw new Error("No se pudo capturar el contenido del constructor.");
+    }
+
+    const projectId =
+      builderProjectId ||
+      (typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10));
+
+    const htmlToStore = publishNow ? injectMetricsTracking(fullHtml, projectId) : fullHtml;
+    const now = Date.now();
+    const payload: Record<string, any> = {
+      id: projectId,
+      html: htmlToStore,
+      userId: user.uid,
+      source: "builder",
+      status: publishNow ? "published" : "draft",
+      published: publishNow,
+      createdAt: now,
+      updatedAt: now,
+      templateName: "Constructor Fast Page",
+      url: "builder://custom",
+    };
+    if (publishNow) payload.publishedAt = now;
+
+    await setDoc(firestoreDoc(db, "cloned_sites", projectId), payload, { merge: true });
+
+    if (!builderProjectId) {
+      setBuilderProjectId(projectId);
+      localStorage.setItem("fastpage_builder_project_id", projectId);
+    }
+    setProjectStatus("saved");
+    return projectId;
+  };
+
+  const handleSaveProject = async () => {
+    if (savingProject) return;
+    setSavingProject(true);
+    setProjectError(null);
+    try {
+      await upsertBuilderProject(false);
+    } catch (error: any) {
+      setProjectError(error?.message || "No se pudo guardar el proyecto.");
+    } finally {
+      setSavingProject(false);
+    }
+  };
+
+  const handlePublishProject = async () => {
+    if (publishingProject) return;
+    setPublishingProject(true);
+    setProjectError(null);
+    try {
+      const projectId = await upsertBuilderProject(true);
+      const previewUrl = `/preview/${projectId}`;
+      setPublishedUrl(previewUrl);
+      setShowPublished(true);
+    } catch (error: any) {
+      setProjectError(error?.message || "No se pudo publicar el proyecto.");
+    } finally {
+      setPublishingProject(false);
+    }
+  };
+
+  const exportHtml = () => {
+    setSaving(true);
+    const fullHtml = serializeBuilderHtml();
+    if (!fullHtml) {
+      setSaving(false);
+      return;
+    }
+
     const blob = new Blob([fullHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -254,9 +377,31 @@ export default function BuilderPage() {
 
   return (
     <div className="min-h-screen bg-[#030712] text-white flex flex-col">
-      <div className="flex-grow flex pt-20">
+      <MobileSavePublishBar
+        title="Constructor"
+        statusText={projectStatus === "dirty" ? "Cambios sin guardar" : "Guardado"}
+        statusDot={projectStatus === "dirty" ? "amber" : "green"}
+        onBack={() => router.push("/hub")}
+        onSave={handleSaveProject}
+        onPublish={handlePublishProject}
+        saving={savingProject}
+        publishing={publishingProject}
+      />
+
+      <div className="flex-grow flex pt-[7.5rem] md:pt-20">
+        {isMobileViewport && isMobileMenuOpen && (
+          <button
+            className="fixed inset-0 bg-black/55 backdrop-blur-[2px] z-30"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Cerrar submenu del constructor"
+          />
+        )}
         {/* Left Sidebar - Toolbar */}
-        <aside className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl fixed left-0 top-20 bottom-0 z-30 hidden lg:flex flex-col">
+        <aside
+          className={`w-80 border-r border-white/5 bg-zinc-900/95 lg:bg-zinc-900/50 backdrop-blur-xl fixed left-0 bottom-0 z-40 flex flex-col transition-transform duration-300 ${
+            isMobileViewport ? "top-[7.5rem]" : "top-20"
+          } ${isMobileViewport ? (isMobileMenuOpen ? "translate-x-0" : "-translate-x-full") : "hidden lg:flex lg:translate-x-0"}`}
+        >
           <div className="p-6 border-b border-white/5">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Layout className="w-5 h-5 text-amber-500" />
@@ -439,6 +584,16 @@ export default function BuilderPage() {
           </div>
         </main>
       </div>
+
+      <PublishSuccessModal
+        open={Boolean(showPublished && publishedUrl)}
+        url={publishedUrl || "/preview"}
+        onBackToPanel={() => {
+          setShowPublished(false);
+          router.push("/cloner/web");
+        }}
+        onContinueEditing={() => setShowPublished(false)}
+      />
     </div>
   );
 }

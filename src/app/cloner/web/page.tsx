@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
 import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap } from "lucide-react";
+import { injectMetricsTracking } from "@/lib/metricsTracking";
+import MobileSavePublishBar from "@/components/MobileSavePublishBar";
+import PublishSuccessModal from "@/components/PublishSuccessModal";
 
 function isValidUrl(url: string) {
   try {
@@ -27,11 +31,15 @@ function normalizeUrl(input: string) {
 export default function WebClonerPage() {
   const { user, loading: authLoading } = useAuth(true);
   const { t } = useLanguage();
+  const router = useRouter();
   const [url, setUrl] = useState("");
   const [html, setHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingToEditor, setSavingToEditor] = useState(false);
+  const [publishingDirect, setPublishingDirect] = useState(false);
+  const [showPublished, setShowPublished] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [publishedSites, setPublishedSites] = useState<any[]>([]);
   const [fetchingSites, setFetchingSites] = useState(true);
   const [sitesError, setSitesError] = useState<string | null>(null);
@@ -101,7 +109,7 @@ export default function WebClonerPage() {
       };
 
       await setDoc(doc(db, "cloned_sites", siteId), sitePayload);
-      window.open(`/editor/${siteId}`, "_blank");
+      router.push(`/editor/${siteId}`);
     } catch (e: any) {
       const msg = String(e?.message || "");
       const low = msg.toLowerCase();
@@ -112,6 +120,51 @@ export default function WebClonerPage() {
       }
     } finally {
       setSavingToEditor(false);
+    }
+  };
+
+  const handlePublishDirect = async () => {
+    if (!html || !isValidUrl(debouncedUrl)) return;
+    if (publishingDirect) return;
+
+    setPublishingDirect(true);
+    setError(null);
+    try {
+      if (authLoading) {
+        throw new Error("Espera un momento mientras validamos tu sesion.");
+      }
+      if (!user?.uid) {
+        throw new Error("Debes iniciar sesion para publicar.");
+      }
+
+      const siteId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID().slice(0, 8)
+          : Math.random().toString(36).slice(2, 10);
+
+      const now = Date.now();
+      const sitePayload = {
+        id: siteId,
+        html: injectMetricsTracking(html, siteId),
+        url: debouncedUrl,
+        userId: user.uid,
+        createdAt: now,
+        updatedAt: now,
+        published: true,
+        status: "published",
+        publishedAt: now,
+        source: "web-cloner",
+        templateName: "Clonador Web",
+      };
+
+      await setDoc(doc(db, "cloned_sites", siteId), sitePayload);
+      setPublishedUrl(`/preview/${siteId}`);
+      setShowPublished(true);
+      await fetchPublishedSites(user.uid);
+    } catch (e: any) {
+      setError(e?.message || "No se pudo publicar. Verifica tu sesion y permisos.");
+    } finally {
+      setPublishingDirect(false);
     }
   };
 
@@ -144,7 +197,20 @@ export default function WebClonerPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <main className="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <MobileSavePublishBar
+        title="Clonador Web"
+        statusText={html ? "Preview listo" : "Listo para clonar"}
+        statusDot={html ? "green" : "none"}
+        onBack={() => router.push("/hub")}
+        onSave={handleOpenEditor}
+        onPublish={handlePublishDirect}
+        saving={savingToEditor}
+        publishing={publishingDirect}
+        disableSave={!isValidUrl(debouncedUrl) || !html || authLoading || !user?.uid}
+        disablePublish={!isValidUrl(debouncedUrl) || !html || authLoading || !user?.uid}
+      />
+
+      <main className="flex-grow pt-[9rem] md:pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Help Button */}
         <button 
           onClick={() => setShowGuide(true)}
@@ -284,7 +350,7 @@ export default function WebClonerPage() {
           </div>
 
           {/* Published Projects Section */}
-          <div className="mb-12">
+          <div className="mb-12" id="published-sites">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                 <Rocket className="w-5 h-5 text-cyan-400" />
@@ -382,6 +448,17 @@ export default function WebClonerPage() {
           </div>
         </div>
       </main>
+
+      <PublishSuccessModal
+        open={Boolean(showPublished && publishedUrl)}
+        url={publishedUrl || "/preview"}
+        onBackToPanel={() => {
+          setShowPublished(false);
+          if (user?.uid) fetchPublishedSites(user.uid);
+          document.getElementById("published-sites")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+        onContinueEditing={() => setShowPublished(false)}
+      />
     </div>
   );
 }

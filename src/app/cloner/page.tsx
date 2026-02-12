@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { TemplateGenerator } from "@/lib/templateGenerator";
+import { injectMetricsTracking } from "@/lib/metricsTracking";
+import MobileSavePublishBar from "@/components/MobileSavePublishBar";
+import PublishSuccessModal from "@/components/PublishSuccessModal";
 import {
   Utensils,
   Cpu,
@@ -49,6 +52,7 @@ import {
   School,
   Monitor,
   Loader2,
+  X,
 } from "lucide-react";
 
 export default function ClonerPage() {
@@ -58,6 +62,11 @@ export default function ClonerPage() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  const [actionPickerOpen, setActionPickerOpen] = useState(false);
+  const [actionMode, setActionMode] = useState<"save" | "publish">("save");
+  const [showPublished, setShowPublished] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishedSiteId, setPublishedSiteId] = useState<string | null>(null);
 
   const models = [
     {
@@ -390,7 +399,7 @@ export default function ClonerPage() {
     setTemplateError(null);
   };
 
-  const handleCreateTemplate = async (sub: { id: string; title: string }) => {
+  const handleCreateTemplate = async (sub: { id: string; title: string }, publishNow = false) => {
     if (loading) return;
     if (!user?.uid) {
       setTemplateError("Debes iniciar sesion para crear una plantilla editable.");
@@ -416,26 +425,37 @@ export default function ClonerPage() {
         businessName: sub.title,
       });
 
+      const now = Date.now();
+      const htmlToStore = publishNow ? injectMetricsTracking(html, siteId) : html;
+
       await setDoc(doc(db, "cloned_sites", siteId), {
         id: siteId,
-        html,
+        html: htmlToStore,
         userId: user.uid,
         category: selectedModel,
         specialty: sub.id,
         templateName: sub.title,
         source: "template-model",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        published: false,
-        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+        published: publishNow,
+        status: publishNow ? "published" : "draft",
+        ...(publishNow ? { publishedAt: now } : {}),
       });
 
-      router.push(`/editor/${siteId}`);
+      if (publishNow) {
+        setPublishedSiteId(siteId);
+        setPublishedUrl(`/preview/${siteId}`);
+        setShowPublished(true);
+      } else {
+        router.push(`/editor/${siteId}`);
+      }
     } catch (error: any) {
       console.error("Error creating template project:", error);
       setTemplateError("No se pudo crear la plantilla. Verifica permisos de Firestore e intenta otra vez.");
     } finally {
       setCreatingTemplate(null);
+      setActionPickerOpen(false);
     }
   };
 
@@ -446,7 +466,32 @@ export default function ClonerPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <main className="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {selectedModel && (
+        <MobileSavePublishBar
+          title="Plantillas"
+          statusText={currentModel?.title || "Selecciona rubro"}
+          statusDot="none"
+          onBack={handleBack}
+          onSave={() => {
+            setActionMode("save");
+            setActionPickerOpen(true);
+          }}
+          onPublish={() => {
+            setActionMode("publish");
+            setActionPickerOpen(true);
+          }}
+          saving={Boolean(creatingTemplate)}
+          publishing={Boolean(creatingTemplate)}
+          disableSave={currentSubcategories.length === 0 || Boolean(creatingTemplate)}
+          disablePublish={currentSubcategories.length === 0 || Boolean(creatingTemplate)}
+        />
+      )}
+
+      <main
+        className={`flex-grow pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden ${
+          selectedModel ? "pt-[9rem] md:pt-24" : "pt-24"
+        }`}
+      >
         {/* Background Effects */}
         <div className="fixed inset-0 pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,215,0,0.02),transparent_70%)]" />
@@ -545,7 +590,7 @@ export default function ClonerPage() {
                 {currentSubcategories.map((sub) => (
                   <div
                     key={sub.id}
-                    onClick={() => handleCreateTemplate(sub)}
+                    onClick={() => handleCreateTemplate(sub, false)}
                     className="
                       group relative p-6 rounded-[1.5rem] border border-white/5 
                       bg-zinc-900/30 backdrop-blur-sm cursor-pointer 
@@ -574,7 +619,7 @@ export default function ClonerPage() {
                       className="mt-5 w-full py-2.5 rounded-full border border-white/10 bg-white/5 group-hover:bg-gold-500 group-hover:text-black group-hover:border-gold-500 transition-all duration-300 font-bold text-sm flex items-center justify-center gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleCreateTemplate(sub);
+                        handleCreateTemplate(sub, false);
                       }}
                       disabled={creatingTemplate === `${selectedModel}:${sub.id}`}
                     >
@@ -602,6 +647,80 @@ export default function ClonerPage() {
           )}
         </div>
       </main>
+
+      {actionPickerOpen && selectedModel && (
+        <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-md p-4 flex items-center justify-center md:hidden">
+          <div className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-[28px] overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-black tracking-[0.18em] uppercase text-zinc-500">
+                  {currentModel?.title || "Plantillas"}
+                </p>
+                <h3 className="text-lg font-bold text-white">
+                  {actionMode === "publish" ? "Publicar plantilla" : "Guardar plantilla"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setActionPickerOpen(false)}
+                className="p-2 rounded-xl hover:bg-white/5 text-zinc-400 hover:text-white transition-all active:scale-95"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 gap-3 max-h-[62vh] overflow-y-auto">
+              {currentSubcategories.map((sub) => {
+                const createKey = `${selectedModel}:${sub.id}`;
+                const isCreating = creatingTemplate === createKey;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => handleCreateTemplate(sub, actionMode === "publish")}
+                    disabled={isCreating}
+                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center gap-3 disabled:opacity-60"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-center shrink-0">
+                      {sub.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white truncate">{sub.title}</span>
+                        <span className="text-sm text-zinc-500">{sub.emoji}</span>
+                      </div>
+                      <p className="text-xs text-zinc-500">
+                        {actionMode === "publish"
+                          ? "Publica y envía a Sitios Publicados"
+                          : "Crea como borrador editable"}
+                      </p>
+                    </div>
+                    <div className="ml-auto">
+                      {isCreating ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-zinc-300" />
+                      ) : (
+                        <ArrowRight className="w-5 h-5 text-zinc-400" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <PublishSuccessModal
+        open={Boolean(showPublished && publishedUrl)}
+        url={publishedUrl || "/preview"}
+        onBackToPanel={() => {
+          setShowPublished(false);
+          router.push("/cloner/web");
+        }}
+        onContinueEditing={() => {
+          if (publishedSiteId) router.push(`/editor/${publishedSiteId}`);
+          setShowPublished(false);
+        }}
+      />
     </div>
   );
 }

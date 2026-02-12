@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
 import { doc as firestoreDoc, getDoc, setDoc } from "firebase/firestore";
 import { injectMetricsTracking } from "@/lib/metricsTracking";
+import PublishSuccessModal from "@/components/PublishSuccessModal";
 
 export default function EditorPage() {
   const { user: session, loading: authLoading } = useAuth(true);
@@ -39,6 +40,7 @@ export default function EditorPage() {
   const [publishResult, setPublishResult] = useState<{ success: boolean; issues: string[]; url?: string } | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Inyectar script de edición en el iframe
@@ -248,6 +250,19 @@ export default function EditorPage() {
     }
   }, [loading, html, isVisualEditActive, isPreviewMode]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 767px)");
+    const syncViewport = () => {
+      const mobile = media.matches;
+      setIsMobileViewport(mobile);
+      if (mobile) setViewMode("mobile");
+    };
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+    return () => media.removeEventListener("change", syncViewport);
+  }, []);
+
   const handleSave = async () => {
     const iframe = iframeRef.current;
     if (!iframe || !iframe.contentDocument) return null;
@@ -358,98 +373,105 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col overflow-hidden">
       {/* Top Bar Editor */}
-      <header className="h-16 border-b border-white/10 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-4 z-50">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => router.back()}
-            className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-all"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="h-6 w-px bg-white/10 mx-2" />
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-medium text-zinc-300 max-w-[200px] truncate">
-              Editor: {id}
-            </span>
+      <header className="border-b border-white/10 bg-zinc-900/80 backdrop-blur-md z-50 px-3 py-2 md:h-16 md:px-4 md:py-0">
+        <div className="h-full flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => router.back()}
+                className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-all"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="h-6 w-px bg-white/10 hidden sm:block" />
+              <div className="flex items-center gap-2 min-w-0">
+                <Globe className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span className="text-sm font-medium text-zinc-300 truncate max-w-[145px] sm:max-w-[200px]">
+                  Editor: {id}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl border border-white/5">
+              <button
+                onClick={() => setIsPreviewMode(false)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${!isPreviewMode ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => setIsPreviewMode(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isPreviewMode ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
+              >
+                Vista Previa
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl border border-white/5">
-          <button
-            onClick={() => setIsPreviewMode(false)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${!isPreviewMode ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
-          >
-            Editar
-          </button>
-          <button
-            onClick={() => setIsPreviewMode(true)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isPreviewMode ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
-          >
-            Vista Previa
-          </button>
-        </div>
+          <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+            {!isMobileViewport && (
+              <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl border border-white/5">
+                <button
+                  onClick={() => setViewMode("desktop")}
+                  className={`p-2 rounded-lg transition-all ${viewMode === "desktop" ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
+                >
+                  <Monitor className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("mobile")}
+                  className={`p-2 rounded-lg transition-all ${viewMode === "mobile" ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
+                >
+                  <Smartphone className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
-        <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl border border-white/5">
-          <button
-            onClick={() => setViewMode("desktop")}
-            className={`p-2 rounded-lg transition-all ${viewMode === "desktop" ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
-          >
-            <Monitor className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode("mobile")}
-            className={`p-2 rounded-lg transition-all ${viewMode === "mobile" ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
-          >
-            <Smartphone className="w-4 h-4" />
-          </button>
-        </div>
+            <button
+              onClick={updatePageBackgroundColor}
+              className="hidden md:inline-flex px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-zinc-200 hover:bg-white/10 transition-all"
+              title="Fondo de pagina"
+            >
+              Fondo
+            </button>
+            <button
+              onClick={updatePageBackgroundImage}
+              className="hidden md:inline-flex px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-zinc-200 hover:bg-white/10 transition-all"
+              title="Imagen de fondo de pagina"
+            >
+              Fondo Img
+            </button>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={updatePageBackgroundColor}
-            className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-zinc-200 hover:bg-white/10 transition-all"
-            title="Fondo de pagina"
-          >
-            Fondo
-          </button>
-          <button
-            onClick={updatePageBackgroundImage}
-            className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-zinc-200 hover:bg-white/10 transition-all"
-            title="Imagen de fondo de pagina"
-          >
-            Fondo Img
-          </button>
-          <div className="flex items-center gap-2 mr-4">
-            {isDirty && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
-            <span className="text-xs text-zinc-500 font-medium">
-              {isDirty ? "Cambios sin guardar" : "Guardado"}
-            </span>
+            <div className="hidden md:flex items-center gap-2 mr-1">
+              {isDirty && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+              <span className="text-xs text-zinc-500 font-medium">
+                {isDirty ? "Cambios sin guardar" : "Guardado"}
+              </span>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {saving ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>Guardar</span>
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={publishing}
+              className="flex-1 md:flex-none px-4 md:px-6 py-2 rounded-xl bg-cyan-500 text-black text-sm font-bold hover:bg-cyan-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-cyan-500/20"
+            >
+              {publishing ? (
+                <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <Rocket className="w-4 h-4" />
+              )}
+              <span>Publicar</span>
+            </button>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-            {saving ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            <span>Guardar</span>
-          </button>
-          <button
-            onClick={handlePublish}
-            disabled={publishing}
-            className="px-6 py-2 rounded-xl bg-cyan-500 text-black text-sm font-bold hover:bg-cyan-400 transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-cyan-500/20"
-          >
-            {publishing ? (
-              <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-            ) : (
-              <Rocket className="w-4 h-4" />
-            )}
-            <span>Publicar</span>
-          </button>
         </div>
       </header>
 
@@ -561,63 +583,13 @@ export default function EditorPage() {
         </div>
       )}
 
-      {showPublished && publishResult && (
-        <div className="fixed inset-0 flex items-center justify-center bg-zinc-950/90 backdrop-blur-md z-[200] animate-in fade-in duration-300 p-4">
-          <div className="bg-zinc-900 border border-white/10 p-8 rounded-[32px] w-full max-w-lg shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500" />
-            
-            <div className="w-20 h-20 bg-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-12">
-              <Rocket className="w-10 h-10 text-cyan-400" />
-            </div>
-            
-            <h3 className="text-3xl font-bold text-center mb-2">¡Lanzamiento Exitoso!</h3>
-            <p className="text-zinc-400 text-center mb-8">Tu landing page ha sido optimizada y publicada.</p>
-            
-            {publishResult.issues.length > 0 && (
-              <div className="mb-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-                <div className="flex items-center gap-2 mb-2 text-amber-400 font-bold text-sm">
-                  <ShieldCheck className="w-4 h-4" />
-                  Sugerencias de Optimización:
-                </div>
-                <ul className="space-y-1">
-                  {publishResult.issues.map((issue, i) => (
-                    <li key={i} className="text-xs text-amber-400/80 flex items-start gap-2">
-                      <span className="mt-1 w-1 h-1 rounded-full bg-amber-400 shrink-0" />
-                      {issue}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-3">
-              <a 
-                href={publishResult.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-full py-4 rounded-2xl bg-cyan-500 text-black font-bold hover:bg-cyan-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
-              >
-                <Eye className="w-5 h-5" />
-                Ver Sitio en Vivo
-              </a>
-              
-              <button 
-                onClick={() => router.push("/cloner/web")}
-                className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
-              >
-                Volver al Panel
-              </button>
-              
-              <button 
-                onClick={() => setShowPublished(false)}
-                className="w-full py-2 text-zinc-500 hover:text-zinc-300 text-sm transition-all"
-              >
-                Seguir Editando
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PublishSuccessModal
+        open={Boolean(showPublished && publishResult?.success && publishResult?.url)}
+        url={publishResult?.url || `/preview/${id}`}
+        issues={publishResult?.issues || []}
+        onBackToPanel={() => router.push("/cloner/web")}
+        onContinueEditing={() => setShowPublished(false)}
+      />
     </div>
   );
 }
