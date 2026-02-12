@@ -351,16 +351,19 @@ export function generateStorefrontHtml(args: {
       .success{display:none;border:1px solid color-mix(in srgb, var(--accent) 40%, rgba(255,255,255,.12));background:color-mix(in srgb, var(--accent) 12%, rgba(255,255,255,.03));padding:14px;border-radius:18px;color:var(--text)}
       .success.show{display:block}
       .mobile-glow{display:none}
+      .mobile-frame{display:none}
       @media (max-width:920px){.hero-inner{grid-template-columns:1fr}.hero h2{font-size:34px}.grid{grid-template-columns:repeat(2, 1fr)}}
       @media (max-width:560px){
         .grid{grid-template-columns:1fr}
         .topbar-inner{padding:12px 14px}
         .mobile-glow{display:block;position:fixed;left:-10%;right:-10%;bottom:-40px;height:220px;pointer-events:none;z-index:0;filter:blur(0px);background:radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),radial-gradient(55% 70% at 70% 0%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 70%)}
+        .mobile-frame{display:block;position:fixed;left:14px;right:14px;bottom:10px;height:54px;border-radius:28px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 20%, transparent), transparent);pointer-events:none;z-index:1}
       }
     </style>
   </head>
   <body>
     <div class="mobile-glow" aria-hidden="true"></div>
+    <div class="mobile-frame" aria-hidden="true"></div>
     <div class="topbar">
       <div class="topbar-inner">
         <div class="brand"><div class="logo" aria-hidden="true"></div><div class="min"><h1>${safeName}</h1><p>${safeTagline}</p></div></div>
