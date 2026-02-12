@@ -13,6 +13,7 @@ import {
   LogOut,
   LayoutGrid,
   ShieldAlert,
+  Store,
 } from "lucide-react";
 
 export default function HubPage() {
@@ -61,6 +62,15 @@ export default function HubPage() {
       href: "/cloner/web",
       gradient: "from-zinc-900 to-zinc-900",
       border: "hover:border-cyan-500/50",
+    },
+    {
+      title: t("hub.store.title"),
+      description: t("hub.store.desc"),
+      icon: <Store className="w-8 h-8 text-emerald-400" />,
+      action: t("hub.store.action"),
+      href: "/store",
+      gradient: "from-zinc-900 to-zinc-900",
+      border: "hover:border-emerald-500/50",
     },
     {
       title: t("hub.metrics.title"),

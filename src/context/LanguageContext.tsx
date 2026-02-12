@@ -20,6 +20,7 @@ const translations: Record<string, Record<Language, string>> = {
   "nav.builder": { es: "Constructor", en: "Builder", pt: "Construtor" },
   "nav.templates": { es: "Plantillas", en: "Templates", pt: "Modelos" },
   "nav.cloner": { es: "Clonador", en: "Cloner", pt: "Clonador" },
+  "nav.store": { es: "Tienda Online", en: "Online Store", pt: "Loja Online" },
   "nav.metrics": { es: "Métricas Pro", en: "Pro Metrics", pt: "Métricas Pro" },
   "nav.hub": { es: "Hub", en: "Hub", pt: "Hub" },
   "nav.settings": { es: "Configuración", en: "Settings", pt: "Configurações" },
@@ -301,6 +302,13 @@ const translations: Record<string, Record<Language, string>> = {
     pt: "Replique qualquer site em segundos e torne-o seu.",
   },
   "hub.webcloner.action": { es: "Abrir Clonador", en: "Open Cloner", pt: "Abrir Clonador" },
+  "hub.store.title": { es: "Creador de Tiendas Online", en: "Online Store Builder", pt: "Criador de Lojas Online" },
+  "hub.store.desc": {
+    es: "Crea una tienda ecommerce profesional con productos, carrito y checkout, lista para publicar.",
+    en: "Create a professional ecommerce store with products, cart and checkout, ready to publish.",
+    pt: "Crie uma loja ecommerce profissional com produtos, carrinho e checkout, pronta para publicar.",
+  },
+  "hub.store.action": { es: "Crear Tienda", en: "Create Store", pt: "Criar Loja" },
   "hub.metrics.title": { es: "Métricas Pro", en: "Pro Metrics", pt: "Métricas Pro" },
   "hub.metrics.desc": {
     es: "Analíticas avanzadas y mapas de calor para optimizar conversiones.",

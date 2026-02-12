@@ -9,6 +9,7 @@ const FOOTER_LINKS = [
   { labelKey: "nav.builder", href: "/builder" },
   { labelKey: "nav.templates", href: "/templates" },
   { labelKey: "nav.cloner", href: "/cloner/web" },
+  { labelKey: "nav.store", href: "/store" },
 ];
 
 export default function Footer() {

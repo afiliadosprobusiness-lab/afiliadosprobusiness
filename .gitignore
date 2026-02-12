@@ -25,6 +25,9 @@ ts-debug.log*
 # local env files
 .env*.local
 
+# local scratch
+tmp_test.txt
+
 # vercel
 .vercel
 
