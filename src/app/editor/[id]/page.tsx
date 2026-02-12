@@ -43,6 +43,14 @@ export default function EditorPage() {
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  const handleBackNav = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/cloner/web");
+  };
+
   // Inyectar script de edición en el iframe
   const injectEditorScript = () => {
     const iframe = iframeRef.current;
@@ -385,7 +393,7 @@ export default function EditorPage() {
           <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <button
-                onClick={() => router.back()}
+                onClick={handleBackNav}
                 className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />

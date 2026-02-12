@@ -6,10 +6,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, deleteDoc, doc, getDocs, query, setDoc, where } from "firebase/firestore";
-import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap, Pencil } from "lucide-react";
-import { injectMetricsTracking } from "@/lib/metricsTracking";
-import MobileSavePublishBar from "@/components/MobileSavePublishBar";
-import PublishSuccessModal from "@/components/PublishSuccessModal";
+import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap } from "lucide-react";
+import MobilePageBar from "@/components/MobilePageBar";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 function isValidUrl(url: string) {
@@ -38,9 +36,6 @@ export default function WebClonerPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingToEditor, setSavingToEditor] = useState(false);
-  const [publishingDirect, setPublishingDirect] = useState(false);
-  const [showPublished, setShowPublished] = useState(false);
-  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [publishedSites, setPublishedSites] = useState<any[]>([]);
   const [fetchingSites, setFetchingSites] = useState(true);
   const [sitesError, setSitesError] = useState<string | null>(null);
@@ -147,51 +142,6 @@ export default function WebClonerPage() {
     }
   };
 
-  const handlePublishDirect = async () => {
-    if (!html || !isValidUrl(debouncedUrl)) return;
-    if (publishingDirect) return;
-
-    setPublishingDirect(true);
-    setError(null);
-    try {
-      if (authLoading) {
-        throw new Error("Espera un momento mientras validamos tu sesion.");
-      }
-      if (!user?.uid) {
-        throw new Error("Debes iniciar sesion para publicar.");
-      }
-
-      const siteId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID().slice(0, 8)
-          : Math.random().toString(36).slice(2, 10);
-
-      const now = Date.now();
-      const sitePayload = {
-        id: siteId,
-        html: injectMetricsTracking(html, siteId),
-        url: debouncedUrl,
-        userId: user.uid,
-        createdAt: now,
-        updatedAt: now,
-        published: true,
-        status: "published",
-        publishedAt: now,
-        source: "web-cloner",
-        templateName: "Clonador Web",
-      };
-
-      await setDoc(doc(db, "cloned_sites", siteId), sitePayload);
-      setPublishedUrl(`/preview/${siteId}`);
-      setShowPublished(true);
-      await fetchPublishedSites(user.uid);
-    } catch (e: any) {
-      setError(e?.message || "No se pudo publicar. Verifica tu sesion y permisos.");
-    } finally {
-      setPublishingDirect(false);
-    }
-  };
-
   useEffect(() => {
     const handler = setTimeout(async () => {
       setError(null);
@@ -221,22 +171,18 @@ export default function WebClonerPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <MobileSavePublishBar
+      <MobilePageBar
         title="Clonador Web"
-        statusText={html ? "Preview listo" : "Listo para clonar"}
-        statusDot={html ? "green" : "none"}
-        onBack={() => router.push("/hub")}
-        onSave={handleOpenEditor}
-        onPublish={handlePublishDirect}
-        saving={savingToEditor}
-        publishing={publishingDirect}
-        disableSave={!isValidUrl(debouncedUrl) || !html || authLoading || !user?.uid}
-        disablePublish={!isValidUrl(debouncedUrl) || !html || authLoading || !user?.uid}
-        saveLabel="Editar"
-        saveIcon={<Pencil className="w-4 h-4" />}
+        onBack={() => {
+          if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+          }
+          router.push("/hub");
+        }}
       />
 
-      <main className="flex-grow pt-[9rem] md:pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <main className="flex-grow pt-[7.5rem] md:pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Help Button */}
         <button 
           onClick={() => setShowGuide(true)}
@@ -407,7 +353,7 @@ export default function WebClonerPage() {
                         </div>
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => window.open(`/editor/${site.id}`, "_blank")}
+                            onClick={() => router.push(`/editor/${site.id}`)}
                             className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
                             title="Editar Proyecto"
                           >
@@ -485,17 +431,6 @@ export default function WebClonerPage() {
           </div>
         </div>
       </main>
-
-      <PublishSuccessModal
-        open={Boolean(showPublished && publishedUrl)}
-        url={publishedUrl || "/preview"}
-        onBackToPanel={() => {
-          setShowPublished(false);
-          if (user?.uid) fetchPublishedSites(user.uid);
-          document.getElementById("published-sites")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }}
-        onContinueEditing={() => setShowPublished(false)}
-      />
 
       <ConfirmDeleteModal
         open={Boolean(deleteTarget)}
