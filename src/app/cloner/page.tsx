@@ -53,6 +53,7 @@ import {
   Monitor,
   Loader2,
   X,
+  Pencil,
 } from "lucide-react";
 
 export default function ClonerPage() {
@@ -484,6 +485,8 @@ export default function ClonerPage() {
           publishing={Boolean(creatingTemplate)}
           disableSave={currentSubcategories.length === 0 || Boolean(creatingTemplate)}
           disablePublish={currentSubcategories.length === 0 || Boolean(creatingTemplate)}
+          saveLabel="Editar"
+          saveIcon={<Pencil className="w-4 h-4" />}
         />
       )}
 

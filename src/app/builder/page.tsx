@@ -32,6 +32,7 @@ import {
   Copy,
   Rocket,
   PanelLeft,
+  Pencil,
   X
 } from "lucide-react";
 
@@ -386,6 +387,8 @@ export default function BuilderPage() {
         onPublish={handlePublishProject}
         saving={savingProject}
         publishing={publishingProject}
+        saveLabel="Editar"
+        saveIcon={<Pencil className="w-4 h-4" />}
       />
 
       <div className="flex-grow flex pt-[7.5rem] md:pt-20">

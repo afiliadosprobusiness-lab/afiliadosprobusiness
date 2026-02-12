@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
-import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap } from "lucide-react";
+import { collection, deleteDoc, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { Globe, ArrowRight, AlertCircle, ExternalLink, Clock, Trash2, Edit3, Rocket, HelpCircle, BookOpen, ShieldCheck, Zap, Pencil } from "lucide-react";
 import { injectMetricsTracking } from "@/lib/metricsTracking";
 import MobileSavePublishBar from "@/components/MobileSavePublishBar";
 import PublishSuccessModal from "@/components/PublishSuccessModal";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 function isValidUrl(url: string) {
   try {
@@ -43,6 +44,9 @@ export default function WebClonerPage() {
   const [publishedSites, setPublishedSites] = useState<any[]>([]);
   const [fetchingSites, setFetchingSites] = useState(true);
   const [sitesError, setSitesError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const debouncedUrl = useMemo(() => normalizeUrl(url), [url]);
 
@@ -120,6 +124,26 @@ export default function WebClonerPage() {
       }
     } finally {
       setSavingToEditor(false);
+    }
+  };
+
+  const handleDeletePublished = async () => {
+    if (!deleteTarget?.id) return;
+    if (!user?.uid) return;
+    if (deleting) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteDoc(doc(db, "cloned_sites", String(deleteTarget.id)));
+      setPublishedSites((prev) => prev.filter((s) => s?.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      await fetchPublishedSites(user.uid);
+    } catch (e: any) {
+      console.error("Error deleting site:", e);
+      setDeleteError(e?.message || "No se pudo eliminar el sitio. Revisa permisos de Firestore.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -208,6 +232,8 @@ export default function WebClonerPage() {
         publishing={publishingDirect}
         disableSave={!isValidUrl(debouncedUrl) || !html || authLoading || !user?.uid}
         disablePublish={!isValidUrl(debouncedUrl) || !html || authLoading || !user?.uid}
+        saveLabel="Editar"
+        saveIcon={<Pencil className="w-4 h-4" />}
       />
 
       <main className="flex-grow pt-[9rem] md:pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -387,6 +413,17 @@ export default function WebClonerPage() {
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDeleteTarget(site);
+                            }}
+                            className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 transition-all"
+                            title="Eliminar Proyecto"
+                            aria-label="Eliminar proyecto"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
 
@@ -458,6 +495,21 @@ export default function WebClonerPage() {
           document.getElementById("published-sites")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
         onContinueEditing={() => setShowPublished(false)}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteTarget)}
+        title="¿Eliminar sitio publicado?"
+        description={`Se eliminara permanentemente el proyecto #${deleteTarget?.id || ""}.`}
+        confirmLabel={deleting ? "Eliminando..." : "Eliminar ahora"}
+        loading={deleting}
+        error={deleteError}
+        onCancel={() => {
+          if (deleting) return;
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeletePublished}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, Rocket, Save } from "lucide-react";
+import type { ReactNode } from "react";
 
 type MobileSavePublishBarProps = {
   title: string;
@@ -13,6 +14,10 @@ type MobileSavePublishBarProps = {
   publishing?: boolean;
   disableSave?: boolean;
   disablePublish?: boolean;
+  saveLabel?: string;
+  publishLabel?: string;
+  saveIcon?: ReactNode;
+  publishIcon?: ReactNode;
 };
 
 function dotClass(dot: MobileSavePublishBarProps["statusDot"]) {
@@ -32,6 +37,10 @@ export default function MobileSavePublishBar({
   publishing = false,
   disableSave = false,
   disablePublish = false,
+  saveLabel = "Guardar",
+  publishLabel = "Publicar",
+  saveIcon,
+  publishIcon,
 }: MobileSavePublishBarProps) {
   return (
     <div className="md:hidden fixed top-16 left-0 right-0 z-50 border-b border-white/10 bg-zinc-900/80 backdrop-blur-md">
@@ -69,9 +78,9 @@ export default function MobileSavePublishBar({
             {saving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <Save className="w-4 h-4" />
+              (saveIcon ?? <Save className="w-4 h-4" />)
             )}
-            Guardar
+            {saveLabel}
           </button>
           <button
             onClick={onPublish}
@@ -81,13 +90,12 @@ export default function MobileSavePublishBar({
             {publishing ? (
               <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
             ) : (
-              <Rocket className="w-4 h-4" />
+              (publishIcon ?? <Rocket className="w-4 h-4" />)
             )}
-            Publicar
+            {publishLabel}
           </button>
         </div>
       </div>
     </div>
   );
 }
-

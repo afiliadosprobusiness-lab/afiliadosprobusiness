@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Save, Eye, Code, Smartphone, Monitor, ArrowLeft, CheckCircle, Globe, Rocket, Trash2, Zap, ShieldCheck, Gauge } from "lucide-react";
+import { Save, Eye, Code, Smartphone, Monitor, ArrowLeft, CheckCircle, Globe, Rocket, Trash2, Zap, ShieldCheck, Gauge, Pencil } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
@@ -263,6 +263,13 @@ export default function EditorPage() {
     return () => media.removeEventListener("change", syncViewport);
   }, []);
 
+  // En movil desactivamos "Vista Previa" para evitar UI innecesaria.
+  useEffect(() => {
+    if (isMobileViewport) {
+      setIsPreviewMode(false);
+    }
+  }, [isMobileViewport]);
+
   const handleSave = async () => {
     const iframe = iframeRef.current;
     if (!iframe || !iframe.contentDocument) return null;
@@ -389,9 +396,13 @@ export default function EditorPage() {
                 <span className="text-sm font-medium text-zinc-300 truncate max-w-[145px] sm:max-w-[200px]">
                   Editor: {id}
                 </span>
+                <span className="md:hidden inline-flex items-center gap-2 px-2 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-extrabold text-cyan-300">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Editar
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl border border-white/5">
+            <div className="hidden md:flex items-center gap-2 bg-zinc-800/50 p-1 rounded-xl border border-white/5">
               <button
                 onClick={() => setIsPreviewMode(false)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${!isPreviewMode ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20" : "text-zinc-400 hover:text-white"}`}
