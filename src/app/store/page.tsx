@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   CheckCircle,
   DollarSign,
+  FileText,
   Loader2,
   Monitor,
   Palette,
@@ -27,6 +28,7 @@ import {
   generateStorefrontHtml,
   STORE_THEMES,
   type StoreConfig,
+  type StoreFeature,
   type StoreProduct,
   type StoreThemeId,
 } from "@/lib/storefrontGenerator";
@@ -81,6 +83,39 @@ function formatMoney(cents: number, currency: StoreConfig["currency"]) {
   }
 }
 
+function safeFeatures(input: StoreConfig["features"]): StoreFeature[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(Boolean)
+    .map((f) => ({
+      title: String((f as any)?.title || ""),
+      subtitle: String((f as any)?.subtitle || ""),
+      color: (f as any)?.color ? String((f as any).color) : undefined,
+    }))
+    .slice(0, 8);
+}
+
+function clampRgbValue(n: number) {
+  return Math.max(0, Math.min(255, Math.trunc(n)));
+}
+
+function hexToRgb(hex: string) {
+  const clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    if ([r, g, b].every((v) => Number.isFinite(v))) return { r, g, b };
+  }
+  if (clean.length === 6) {
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    if ([r, g, b].every((v) => Number.isFinite(v))) return { r, g, b };
+  }
+  return { r: 0, g: 0, b: 0 };
+}
+
 type ProductDraft = {
   id?: string;
   name: string;
@@ -98,6 +133,33 @@ const DEFAULT_CONFIG: StoreConfig = {
   currency: "PEN",
   themeId: "aurora",
   primaryCta: "Comprar ahora",
+  customRgb: {
+    accent: { r: 6, g: 182, b: 212 },
+    accent2: { r: 34, g: 197, b: 94 },
+  },
+  content: {
+    kicker: "Ecommerce Deluxe",
+    heroTitle: "Tu tienda lista para",
+    heroAccent: "vender hoy",
+    heroSubtitle:
+      "Productos, carrito y checkout dentro de una experiencia rapida y premium. Disenada para convertir en movil y escritorio.",
+    heroPrimaryButton: "Explorar productos",
+    heroSecondaryButton: "Ver carrito",
+    productsTitle: "Productos destacados",
+    productsSubtitle: "Todo lo que agregues aqui aparecera debajo del hero.",
+    tipText:
+      "Tip: Puedes publicar tu tienda y recibir pedidos desde cualquier dispositivo.",
+    cartLabel: "Carrito",
+    checkoutTitle: "Checkout",
+    checkoutButton: "Finalizar compra",
+    continueButton: "Seguir comprando",
+    footerLeft: "Publicado con Fast Page",
+  },
+  features: [
+    { title: "Carrito inteligente", subtitle: "Persistente y rapido" },
+    { title: "Checkout integrado", subtitle: "Flujo profesional", color: "var(--accent2)" },
+    { title: "Diseno premium", subtitle: "5 temas deluxe", color: "#a78bfa" },
+  ],
 };
 
 const DEFAULT_PRODUCTS: StoreProduct[] = [
@@ -143,7 +205,7 @@ export default function StoreBuilderPage() {
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
   const [activePanel, setActivePanel] = useState<
-    "products" | "design" | "settings"
+    "products" | "design" | "content" | "settings"
   >("products");
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
@@ -236,6 +298,44 @@ export default function StoreBuilderPage() {
     });
   }, [projectId, config, products]);
 
+  const updateContent = (patch: Partial<StoreConfig["content"]>) => {
+    setConfig((c) => ({
+      ...c,
+      content: {
+        ...(c.content || {}),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateFeature = (idx: number, patch: Partial<StoreFeature>) => {
+    setConfig((c) => {
+      const features = safeFeatures(c.features);
+      while (features.length < 3) {
+        features.push({ title: "", subtitle: "" });
+      }
+      features[idx] = { ...features[idx], ...patch };
+      return { ...c, features };
+    });
+  };
+
+  const addFeature = () => {
+    setConfig((c) => {
+      const features = safeFeatures(c.features);
+      if (features.length >= 6) return c;
+      features.push({ title: "Nuevo beneficio", subtitle: "Descripcion" });
+      return { ...c, features };
+    });
+  };
+
+  const removeFeature = (idx: number) => {
+    setConfig((c) => {
+      const features = safeFeatures(c.features);
+      features.splice(idx, 1);
+      return { ...c, features };
+    });
+  };
+
   const openNewProduct = () => {
     setEditingProductId(null);
     setProductDraft({
@@ -314,6 +414,34 @@ export default function StoreBuilderPage() {
     setProducts((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const getRgbValue = (
+    kind: "accent" | "accent2",
+    channel: "r" | "g" | "b",
+  ) => {
+    const fallback =
+      kind === "accent" ? hexToRgb(theme.accent) : hexToRgb(theme.accent2);
+    const stored = config.customRgb?.[kind];
+    return (stored?.[channel] ?? fallback[channel] ?? 0) as number;
+  };
+
+  const updateRgb = (
+    kind: "accent" | "accent2",
+    channel: "r" | "g" | "b",
+    value: string,
+  ) => {
+    const num = clampRgbValue(Number(value));
+    setConfig((c) => {
+      const current = c.customRgb?.[kind] || hexToRgb(kind === "accent" ? theme.accent : theme.accent2);
+      return {
+        ...c,
+        customRgb: {
+          ...(c.customRgb || {}),
+          [kind]: { ...current, [channel]: num },
+        },
+      };
+    });
+  };
+
   const saveProject = async (publishNow: boolean) => {
     if (saving || publishing) return;
     if (publishNow) setPublishing(true);
@@ -371,6 +499,15 @@ export default function StoreBuilderPage() {
 
   const theme =
     STORE_THEMES.find((x) => x.id === config.themeId) || STORE_THEMES[0];
+  const featuresEditable = (() => {
+    const current = safeFeatures(config.features);
+    if (current.length) return current;
+    return [
+      { title: "", subtitle: "" },
+      { title: "", subtitle: "" },
+      { title: "", subtitle: "" },
+    ];
+  })();
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col overflow-hidden">
@@ -466,6 +603,7 @@ export default function StoreBuilderPage() {
             {[
               { id: "products", label: "Productos", icon: <ShoppingCart className="w-4 h-4" /> },
               { id: "design", label: "Diseno", icon: <Palette className="w-4 h-4" /> },
+              { id: "content", label: "Contenido", icon: <FileText className="w-4 h-4" /> },
               { id: "settings", label: "Ajustes", icon: <DollarSign className="w-4 h-4" /> },
             ].map((tab) => (
               <button
@@ -543,6 +681,222 @@ export default function StoreBuilderPage() {
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
                 <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">Tema actual</div>
                 <div className="mt-2 font-extrabold text-white">{theme.name}</div>
+              </div>
+            </div>
+          )}
+
+          {activePanel === "content" && (
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Hero
+                </div>
+                <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Kicker
+                </label>
+                <input
+                  value={config.content?.kicker || ""}
+                  onChange={(e) => updateContent({ kicker: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
+                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Titulo
+                </label>
+                <input
+                  value={config.content?.heroTitle || ""}
+                  onChange={(e) => updateContent({ heroTitle: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
+                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Palabra destaque
+                </label>
+                <input
+                  value={config.content?.heroAccent || ""}
+                  onChange={(e) => updateContent({ heroAccent: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
+                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Subtitulo
+                </label>
+                <textarea
+                  value={config.content?.heroSubtitle || ""}
+                  onChange={(e) => updateContent({ heroSubtitle: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40 min-h-[100px]"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton principal
+                    </label>
+                    <input
+                      value={config.content?.heroPrimaryButton || ""}
+                      onChange={(e) =>
+                        updateContent({ heroPrimaryButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton secundario
+                    </label>
+                    <input
+                      value={config.content?.heroSecondaryButton || ""}
+                      onChange={(e) =>
+                        updateContent({ heroSecondaryButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Seccion productos
+                </div>
+                <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Titulo
+                </label>
+                <input
+                  value={config.content?.productsTitle || ""}
+                  onChange={(e) => updateContent({ productsTitle: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
+                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Subtitulo
+                </label>
+                <input
+                  value={config.content?.productsSubtitle || ""}
+                  onChange={(e) =>
+                    updateContent({ productsSubtitle: e.target.value })
+                  }
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
+              </div>
+
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Beneficios
+                </div>
+                {featuresEditable.map((feat, idx) => (
+                  <div
+                    key={`feat-${idx}`}
+                    className="rounded-2xl border border-white/10 bg-black/30 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <b className="text-xs text-white">Item {idx + 1}</b>
+                      <button
+                        onClick={() => removeFeature(idx)}
+                        className="text-xs text-red-300 hover:text-red-200"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                    <input
+                      value={feat.title}
+                      onChange={(e) =>
+                        updateFeature(idx, { title: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                      placeholder="Titulo"
+                    />
+                    <input
+                      value={feat.subtitle}
+                      onChange={(e) =>
+                        updateFeature(idx, { subtitle: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                      placeholder="Subtitulo"
+                    />
+                    <input
+                      value={feat.color || ""}
+                      onChange={(e) =>
+                        updateFeature(idx, { color: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                      placeholder="Color (ej: #a78bfa)"
+                    />
+                  </div>
+                ))}
+                <button
+                  onClick={addFeature}
+                  className="w-full px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
+                >
+                  Agregar beneficio
+                </button>
+              </div>
+
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Etiquetas
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Carrito
+                    </label>
+                    <input
+                      value={config.content?.cartLabel || ""}
+                      onChange={(e) => updateContent({ cartLabel: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Checkout titulo
+                    </label>
+                    <input
+                      value={config.content?.checkoutTitle || ""}
+                      onChange={(e) =>
+                        updateContent({ checkoutTitle: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton checkout
+                    </label>
+                    <input
+                      value={config.content?.checkoutButton || ""}
+                      onChange={(e) =>
+                        updateContent({ checkoutButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton seguir
+                    </label>
+                    <input
+                      value={config.content?.continueButton || ""}
+                      onChange={(e) =>
+                        updateContent({ continueButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+                </div>
+                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Tip
+                </label>
+                <input
+                  value={config.content?.tipText || ""}
+                  onChange={(e) => updateContent({ tipText: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
+                <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                  Footer izquierda
+                </label>
+                <input
+                  value={config.content?.footerLeft || ""}
+                  onChange={(e) => updateContent({ footerLeft: e.target.value })}
+                  className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                />
               </div>
             </div>
           )}
@@ -652,6 +1006,7 @@ export default function StoreBuilderPage() {
                 {[
                   { id: "products", label: "Productos" },
                   { id: "design", label: "Tema" },
+                  { id: "content", label: "Contenido" },
                   { id: "settings", label: "Ajustes" },
                 ].map((tab) => (
                   <button
@@ -740,6 +1095,195 @@ export default function StoreBuilderPage() {
                       </div>
                     </button>
                   ))}
+                </div>
+              )}
+
+              {activePanel === "content" && (
+                <div className="space-y-3">
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Kicker
+                    </label>
+                    <input
+                      value={config.content?.kicker || ""}
+                      onChange={(e) => updateContent({ kicker: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Titulo
+                    </label>
+                    <input
+                      value={config.content?.heroTitle || ""}
+                      onChange={(e) => updateContent({ heroTitle: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Palabra destaque
+                    </label>
+                    <input
+                      value={config.content?.heroAccent || ""}
+                      onChange={(e) => updateContent({ heroAccent: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Subtitulo
+                    </label>
+                    <textarea
+                      value={config.content?.heroSubtitle || ""}
+                      onChange={(e) => updateContent({ heroSubtitle: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40 min-h-[100px]"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton principal
+                    </label>
+                    <input
+                      value={config.content?.heroPrimaryButton || ""}
+                      onChange={(e) =>
+                        updateContent({ heroPrimaryButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton secundario
+                    </label>
+                    <input
+                      value={config.content?.heroSecondaryButton || ""}
+                      onChange={(e) =>
+                        updateContent({ heroSecondaryButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Titulo productos
+                    </label>
+                    <input
+                      value={config.content?.productsTitle || ""}
+                      onChange={(e) => updateContent({ productsTitle: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Subtitulo productos
+                    </label>
+                    <input
+                      value={config.content?.productsSubtitle || ""}
+                      onChange={(e) =>
+                        updateContent({ productsSubtitle: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <div className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Beneficios
+                    </div>
+                    {featuresEditable.map((feat, idx) => (
+                      <div
+                        key={`mfeat-${idx}`}
+                        className="rounded-2xl border border-white/10 bg-black/30 p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <b className="text-xs text-white">Item {idx + 1}</b>
+                          <button
+                            onClick={() => removeFeature(idx)}
+                            className="text-xs text-red-300 hover:text-red-200"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                        <input
+                          value={feat.title}
+                          onChange={(e) =>
+                            updateFeature(idx, { title: e.target.value })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                          placeholder="Titulo"
+                        />
+                        <input
+                          value={feat.subtitle}
+                          onChange={(e) =>
+                            updateFeature(idx, { subtitle: e.target.value })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                          placeholder="Subtitulo"
+                        />
+                        <input
+                          value={feat.color || ""}
+                          onChange={(e) =>
+                            updateFeature(idx, { color: e.target.value })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                          placeholder="Color (ej: #a78bfa)"
+                        />
+                      </div>
+                    ))}
+                    <button
+                      onClick={addFeature}
+                      className="w-full px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
+                    >
+                      Agregar beneficio
+                    </button>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <label className="text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Carrito
+                    </label>
+                    <input
+                      value={config.content?.cartLabel || ""}
+                      onChange={(e) => updateContent({ cartLabel: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Checkout titulo
+                    </label>
+                    <input
+                      value={config.content?.checkoutTitle || ""}
+                      onChange={(e) =>
+                        updateContent({ checkoutTitle: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton checkout
+                    </label>
+                    <input
+                      value={config.content?.checkoutButton || ""}
+                      onChange={(e) =>
+                        updateContent({ checkoutButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Boton seguir
+                    </label>
+                    <input
+                      value={config.content?.continueButton || ""}
+                      onChange={(e) =>
+                        updateContent({ continueButton: e.target.value })
+                      }
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Tip
+                    </label>
+                    <input
+                      value={config.content?.tipText || ""}
+                      onChange={(e) => updateContent({ tipText: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                    <label className="mt-3 block text-xs font-extrabold tracking-[0.18em] uppercase text-zinc-500">
+                      Footer izquierda
+                    </label>
+                    <input
+                      value={config.content?.footerLeft || ""}
+                      onChange={(e) => updateContent({ footerLeft: e.target.value })}
+                      className="mt-2 w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white font-bold outline-none focus:border-emerald-500/40"
+                    />
+                  </div>
                 </div>
               )}
 

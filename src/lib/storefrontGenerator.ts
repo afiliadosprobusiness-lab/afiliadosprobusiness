@@ -24,6 +24,18 @@ export type StoreProduct = {
   sku?: string;
 };
 
+export type StoreFeature = {
+  title: string;
+  subtitle: string;
+  color?: string; // CSS color
+};
+
+export type StoreRgb = {
+  r: number;
+  g: number;
+  b: number;
+};
+
 export type StoreConfig = {
   storeName: string;
   tagline: string;
@@ -31,6 +43,30 @@ export type StoreConfig = {
   themeId: StoreThemeId;
   supportWhatsapp?: string; // E.164 or local
   primaryCta?: string;
+  customRgb?: {
+    accent?: StoreRgb;
+    accent2?: StoreRgb;
+  };
+
+  // Content (editable)
+  content?: {
+    kicker?: string;
+    heroTitle?: string;
+    heroAccent?: string;
+    heroSubtitle?: string;
+    heroPrimaryButton?: string;
+    heroSecondaryButton?: string;
+    productsTitle?: string;
+    productsSubtitle?: string;
+    tipText?: string;
+    cartLabel?: string;
+    checkoutTitle?: string;
+    checkoutButton?: string;
+    continueButton?: string;
+    footerLeft?: string;
+  };
+
+  features?: StoreFeature[];
 };
 
 export const STORE_THEMES: StoreTheme[] = [
@@ -109,6 +145,18 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+function clampRgb(n: number) {
+  return Math.max(0, Math.min(255, Math.trunc(n)));
+}
+
+function rgbToCss(rgb?: StoreRgb) {
+  if (!rgb) return "";
+  const r = clampRgb(rgb.r);
+  const g = clampRgb(rgb.g);
+  const b = clampRgb(rgb.b);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 export function generateStorefrontHtml(args: {
   storeId: string;
   config: StoreConfig;
@@ -125,12 +173,50 @@ export function generateStorefrontHtml(args: {
   const theme =
     STORE_THEMES.find((t) => t.id === args.config.themeId) || STORE_THEMES[0];
 
+  const customAccent = rgbToCss(args.config.customRgb?.accent);
+  const customAccent2 = rgbToCss(args.config.customRgb?.accent2);
+  const accent = customAccent || theme.accent;
+  const accent2 = customAccent2 || theme.accent2;
+
   const safeName = escapeHtml(args.config.storeName || "Mi Tienda");
   const safeTagline = escapeHtml(args.config.tagline || "Tienda online deluxe");
 
   const currency = args.config.currency || "PEN";
   const supportWhatsapp = (args.config.supportWhatsapp || "").trim();
   const primaryCta = escapeHtml(args.config.primaryCta || "Comprar ahora");
+
+  const content = args.config.content || {};
+  const kicker = escapeHtml(content.kicker || "Ecommerce Deluxe");
+  const heroTitle = escapeHtml(content.heroTitle || "Tu tienda lista para");
+  const heroAccent = escapeHtml(content.heroAccent || "vender hoy");
+  const heroSubtitle = escapeHtml(
+    content.heroSubtitle ||
+      "Productos, carrito y checkout dentro de una experiencia rapida y premium. Disenada para convertir en movil y escritorio.",
+  );
+  const heroPrimaryButton = escapeHtml(content.heroPrimaryButton || "Explorar productos");
+  const heroSecondaryButton = escapeHtml(content.heroSecondaryButton || "Ver carrito");
+  const productsTitle = escapeHtml(content.productsTitle || "Productos destacados");
+  const productsSubtitle = escapeHtml(
+    content.productsSubtitle || "Todo lo que agregues aqui aparecera debajo del hero."
+  );
+  const tipText = escapeHtml(
+    content.tipText ||
+      "Tip: Puedes publicar tu tienda y recibir pedidos desde cualquier dispositivo.",
+  );
+  const cartLabel = escapeHtml(content.cartLabel || "Carrito");
+  const checkoutTitle = escapeHtml(content.checkoutTitle || "Checkout");
+  const checkoutButton = escapeHtml(content.checkoutButton || "Finalizar compra");
+  const continueButton = escapeHtml(content.continueButton || "Seguir comprando");
+  const footerLeft = escapeHtml(content.footerLeft || "Publicado con Fast Page");
+
+  const features: StoreFeature[] =
+    Array.isArray(args.config.features) && args.config.features.length
+      ? args.config.features
+      : [
+          { title: "Carrito inteligente", subtitle: "Persistente y rapido" },
+          { title: "Checkout integrado", subtitle: "Flujo profesional", color: "var(--accent2)" },
+          { title: "Diseno premium", subtitle: "5 temas deluxe", color: "#a78bfa" },
+        ];
 
   const products = (args.products || [])
     .filter((p) => p && p.active)
@@ -150,9 +236,19 @@ export function generateStorefrontHtml(args: {
     supportWhatsapp,
     primaryCta,
     products,
+    content: {
+      cartLabel,
+      checkoutTitle,
+      checkoutButton,
+      continueButton,
+      heroPrimaryButton,
+      heroSecondaryButton,
+      productsTitle,
+      productsSubtitle,
+    },
     theme: {
-      accent: theme.accent,
-      accent2: theme.accent2,
+      accent,
+      accent2,
       surface: theme.surface,
       surface2: theme.surface2,
       text: theme.text,
@@ -174,7 +270,7 @@ export function generateStorefrontHtml(args: {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-      :root{--accent:${theme.accent};--accent2:${theme.accent2};--bg:${theme.surface};--surface:${theme.surface2};--text:${theme.text};--muted:${theme.muted};--r:${theme.radius}px;--shadow:0 20px 70px rgba(0,0,0,.55)}
+      :root{--accent:${accent};--accent2:${accent2};--bg:${theme.surface};--surface:${theme.surface2};--text:${theme.text};--muted:${theme.muted};--r:${theme.radius}px;--shadow:0 20px 70px rgba(0,0,0,.55)}
       *{box-sizing:border-box}
       html,body{height:100%}
       body{margin:0;font-family:${theme.font};background:radial-gradient(1200px 700px at 25% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),radial-gradient(900px 600px at 95% 20%, color-mix(in srgb, var(--accent2) 12%, transparent), transparent 70%),linear-gradient(180deg, var(--bg), #050507);color:var(--text)}
@@ -205,6 +301,9 @@ export function generateStorefrontHtml(args: {
       .stat b{font-size:13px}
       .stat small{display:block;color:var(--muted);margin-top:2px;font-weight:700}
       .grid{margin-top:18px;display:grid;grid-template-columns:repeat(3, 1fr);gap:14px}
+      .section-title{margin-top:18px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+      .section-title h3{margin:0;font-size:22px;letter-spacing:-.01em}
+      .section-title p{margin:6px 0 0;color:var(--muted);font-size:13px}
       .prod{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);border-radius:calc(var(--r) + 8px);overflow:hidden;box-shadow:0 18px 55px rgba(0,0,0,.35);display:flex;flex-direction:column;min-height:340px}
       .prod .img{aspect-ratio:4/3;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;position:relative}
       .prod img{width:100%;height:100%;object-fit:cover;display:block}
@@ -251,29 +350,52 @@ export function generateStorefrontHtml(args: {
       .notice{font-size:12px;color:var(--muted);line-height:1.4}
       .success{display:none;border:1px solid color-mix(in srgb, var(--accent) 40%, rgba(255,255,255,.12));background:color-mix(in srgb, var(--accent) 12%, rgba(255,255,255,.03));padding:14px;border-radius:18px;color:var(--text)}
       .success.show{display:block}
+      .mobile-glow{display:none}
       @media (max-width:920px){.hero-inner{grid-template-columns:1fr}.hero h2{font-size:34px}.grid{grid-template-columns:repeat(2, 1fr)}}
-      @media (max-width:560px){.grid{grid-template-columns:1fr}.topbar-inner{padding:12px 14px}}
+      @media (max-width:560px){
+        .grid{grid-template-columns:1fr}
+        .topbar-inner{padding:12px 14px}
+        .mobile-glow{display:block;position:fixed;left:-10%;right:-10%;bottom:-40px;height:220px;pointer-events:none;z-index:0;filter:blur(0px);background:radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),radial-gradient(55% 70% at 70% 0%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 70%)}
+      }
     </style>
   </head>
   <body>
+    <div class="mobile-glow" aria-hidden="true"></div>
     <div class="topbar">
       <div class="topbar-inner">
         <div class="brand"><div class="logo" aria-hidden="true"></div><div class="min"><h1>${safeName}</h1><p>${safeTagline}</p></div></div>
         <div class="grow"></div>
-        <button class="pill ghost" id="btnCart" type="button" aria-label="Abrir carrito">?? <span>Carrito</span> <span id="cartCount">(0)</span></button>
+        <button class="pill ghost" id="btnCart" type="button" aria-label="Abrir carrito">?? <span>${cartLabel}</span> <span id="cartCount">(0)</span></button>
         ${supportWhatsapp ? `<a class="pill primary" id="btnWhats" href="#" rel="noopener noreferrer">${primaryCta}</a>` : `<button class="pill primary" id="btnShop" type="button">${primaryCta}</button>`}
       </div>
     </div>
 
     <div class="wrap">
-      <section class="hero"><div class="hero-inner"><div><span class="tag">Ecommerce Deluxe</span><h2>Tu tienda lista para <span>vender hoy</span>.</h2><p>Productos, carrito y checkout dentro de una experiencia rapida y premium. Disenada para convertir en movil y escritorio.</p><div class="hero-actions"><button class="btn primary" id="btnHeroShop" type="button">Explorar productos</button><button class="btn" id="btnHeroCart" type="button">Ver carrito</button></div></div><div class="hero-card"><div class="stat"><span class="dot"></span><div><b>Carrito inteligente</b><small>Persistente y rapido</small></div></div><div class="stat"><span class="dot" style="background:var(--accent2)"></span><div><b>Checkout integrado</b><small>Flujo profesional</small></div></div><div class="stat"><span class="dot" style="background:#a78bfa"></span><div><b>Diseno premium</b><small>5 temas deluxe</small></div></div><p class="notice">Tip: Puedes publicar tu tienda y recibir pedidos desde cualquier dispositivo.</p></div></div></section>
-      <section><div class="grid" id="productsGrid" aria-live="polite"></div></section>
-      <div class="footer"><span>Publicado con Fast Page</span><span class="muted">? ${new Date().getFullYear()} ${safeName}</span></div>
+      <section class="hero"><div class="hero-inner"><div><span class="tag">${kicker}</span><h2>${heroTitle} <span>${heroAccent}</span>.</h2><p>${heroSubtitle}</p><div class="hero-actions"><button class="btn primary" id="btnHeroShop" type="button">${heroPrimaryButton}</button><button class="btn" id="btnHeroCart" type="button">${heroSecondaryButton}</button></div></div><div class="hero-card">${features
+        .slice(0, 6)
+        .map((f, i) => {
+          const title = escapeHtml(String(f?.title || ""));
+          const subtitle = escapeHtml(String(f?.subtitle || ""));
+          const dotColor = f?.color ? String(f.color) : i === 0 ? "var(--accent)" : i === 1 ? "var(--accent2)" : "#a78bfa";
+          const dotStyle = dotColor ? ` style="background:${escapeHtml(dotColor)}"` : "";
+          return `<div class="stat"><span class="dot"${dotStyle}></span><div><b>${title || "Beneficio"}</b><small>${subtitle || "Descripcion"}</small></div></div>`;
+        })
+        .join("")}<p class="notice">${tipText}</p></div></div></section>
+      <section>
+        <div class="section-title">
+          <div>
+            <h3>${productsTitle}</h3>
+            <p>${productsSubtitle}</p>
+          </div>
+        </div>
+        <div class="grid" id="productsGrid" aria-live="polite"></div>
+      </section>
+      <div class="footer"><span>${footerLeft}</span><span class="muted">? ${new Date().getFullYear()} ${safeName}</span></div>
     </div>
 
-    <div class="drawer" id="cartDrawer" aria-hidden="true"><div class="backdrop" id="drawerBackdrop"></div><aside class="panel" role="dialog" aria-modal="true" aria-label="Carrito"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><h4>Carrito</h4><button class="x" id="btnCloseCart" type="button" aria-label="Cerrar">?</button></div><div class="cart-items" id="cartItems"></div><div class="totals"><div class="totals-row"><span class="muted">Total</span><span id="cartTotal">0</span></div><div class="checkout"><button class="btn primary" id="btnCheckout" type="button">Finalizar compra</button><button class="btn" id="btnContinue" type="button">Seguir comprando</button></div></div></aside></div>
+    <div class="drawer" id="cartDrawer" aria-hidden="true"><div class="backdrop" id="drawerBackdrop"></div><aside class="panel" role="dialog" aria-modal="true" aria-label="${cartLabel}"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><h4>${cartLabel}</h4><button class="x" id="btnCloseCart" type="button" aria-label="Cerrar">?</button></div><div class="cart-items" id="cartItems"></div><div class="totals"><div class="totals-row"><span class="muted">Total</span><span id="cartTotal">0</span></div><div class="checkout"><button class="btn primary" id="btnCheckout" type="button">${checkoutButton}</button><button class="btn" id="btnContinue" type="button">${continueButton}</button></div></div></aside></div>
 
-    <div class="modal" id="checkoutModal" aria-hidden="true"><div class="backdrop" id="modalBackdrop"></div><div class="modal-card" role="dialog" aria-modal="true" aria-label="Checkout"><div class="modal-head"><b>Checkout</b><button class="x" id="btnCloseCheckout" type="button" aria-label="Cerrar">?</button></div><div class="modal-body"><div class="success" id="orderSuccess"><b>Pedido recibido</b><div style="margin-top:6px;color:var(--muted);font-weight:800;font-size:12px">Gracias. Te contactaremos para coordinar el pago y entrega.</div></div><div class="field"><label>Nombre</label><input id="cName" placeholder="Tu nombre" autocomplete="name"></div><div class="field"><label>Correo</label><input id="cEmail" placeholder="correo@ejemplo.com" autocomplete="email"></div><div class="field"><label>Telefono</label><input id="cPhone" placeholder="+51..." autocomplete="tel"></div><div class="field"><label>Direccion</label><textarea id="cAddress" placeholder="Distrito, direccion, referencias"></textarea></div><p class="notice" id="syncNotice">Intentaremos sincronizar tu pedido con Firebase.</p><button class="btn primary" id="btnPlaceOrder" type="button">Confirmar pedido</button></div></div></div>
+    <div class="modal" id="checkoutModal" aria-hidden="true"><div class="backdrop" id="modalBackdrop"></div><div class="modal-card" role="dialog" aria-modal="true" aria-label="Checkout"><div class="modal-head"><b>${checkoutTitle}</b><button class="x" id="btnCloseCheckout" type="button" aria-label="Cerrar">?</button></div><div class="modal-body"><div class="success" id="orderSuccess"><b>Pedido recibido</b><div style="margin-top:6px;color:var(--muted);font-weight:800;font-size:12px">Gracias. Te contactaremos para coordinar el pago y entrega.</div></div><div class="field"><label>Nombre</label><input id="cName" placeholder="Tu nombre" autocomplete="name"></div><div class="field"><label>Correo</label><input id="cEmail" placeholder="correo@ejemplo.com" autocomplete="email"></div><div class="field"><label>Telefono</label><input id="cPhone" placeholder="+51..." autocomplete="tel"></div><div class="field"><label>Direccion</label><textarea id="cAddress" placeholder="Distrito, direccion, referencias"></textarea></div><p class="notice" id="syncNotice">Intentaremos sincronizar tu pedido con Firebase.</p><button class="btn primary" id="btnPlaceOrder" type="button">Confirmar pedido</button></div></div></div>
 
     <script type="application/json" id="fpStoreData">${escapeHtml(JSON.stringify(storefrontData))}</script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
